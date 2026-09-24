@@ -11,3 +11,4 @@ venv/
 server/data/
 dist/
 build/
+project.private.config.json

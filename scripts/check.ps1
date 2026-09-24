@@ -14,6 +14,9 @@ try {
     node -e "JSON.parse(require('fs').readFileSync('project.config.json','utf8')); JSON.parse(require('fs').readFileSync('miniprogram/app.json','utf8'))"
 
     $wxml = Get-Content miniprogram/pages/mirror/index.wxml -Raw -Encoding utf8
+    # WXML expressions allow JavaScript operators such as && inside attributes,
+    # while the .NET XML parser requires bare ampersands to be escaped.
+    $wxml = $wxml -replace '&(?!#\d+;|#x[0-9A-Fa-f]+;|[A-Za-z][A-Za-z0-9]+;)', '&amp;'
     $wxml = $wxml -replace '<view class="mirror-page">', '<view xmlns:wx="urn:wx" class="mirror-page">'
     $wxml = $wxml -replace ' wx:else>', ' wx:else="true">'
     $wxml = $wxml -replace ' scroll-x enable-flex>', ' scroll-x="true" enable-flex="true">'

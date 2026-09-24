@@ -1,6 +1,6 @@
 <view class="mirror-page">
   <camera
-    wx:if="{{inStudio &amp;&amp; cameraAvailable &amp;&amp; !liveStreamActive}}"
+    wx:if="{{inStudio && cameraAvailable && !liveStreamActive}}"
     class="camera-surface"
     device-position="front"
     mode="normal"
@@ -78,7 +78,7 @@
     <view wx:if="{{!cameraAvailable}}" class="camera-message">{{cameraMessage}}</view>
     <view wx:if="{{liveRemaining > 0}}" class="countdown">实时试衣 · {{liveRemaining}}s</view>
     <button
-      wx:if="{{liveRemaining === 0 &amp;&amp; !scanActive}}"
+      wx:if="{{liveRemaining === 0 && !scanActive}}"
       class="capture-button"
       bindtap="captureStaticTryOn"
     >定格试穿</button>
