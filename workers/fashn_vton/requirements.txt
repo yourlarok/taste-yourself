@@ -1,0 +1,5 @@
+fastapi>=0.115,<1
+pillow>=11,<13
+python-multipart>=0.0.20,<1
+uvicorn[standard]>=0.30,<1
+fashn-vton @ git+https://github.com/fashn-AI/fashn-vton-1.5.git@7c0f10af3f91ad4048fe9729c470a13ef905d25a

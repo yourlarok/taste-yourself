@@ -1,0 +1,1 @@
+"""Taste Yourself API package."""

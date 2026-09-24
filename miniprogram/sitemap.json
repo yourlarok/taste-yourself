@@ -1,0 +1,9 @@
+{
+  "desc": "Taste Yourself sitemap",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

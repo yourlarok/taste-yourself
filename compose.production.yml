@@ -1,0 +1,78 @@
+services:
+  api:
+    build:
+      context: ./server
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      DATABASE_PATH: /data/taste-yourself.db
+      MEDIA_ROOT: /data/media
+      AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET}
+      WECHAT_APP_ID: ${WECHAT_APP_ID}
+      WECHAT_APP_SECRET: ${WECHAT_APP_SECRET}
+      TRYON_PROVIDER: ${TRYON_PROVIDER}
+      FASHN_WORKER_URL: http://fashn-worker:9000
+      FASHN_WORKER_TOKEN: ${FASHN_WORKER_TOKEN}
+      STATIC_DAILY_LIMIT: ${STATIC_DAILY_LIMIT:-20}
+      REALTIME_DAILY_LIMIT: ${REALTIME_DAILY_LIMIT:-3}
+      PERSON_IMAGE_RETENTION_DAYS: ${PERSON_IMAGE_RETENTION_DAYS:-7}
+      TRYON_RESULT_RETENTION_DAYS: ${TRYON_RESULT_RETENTION_DAYS:-30}
+      REALTIME_PROVIDER: ${REALTIME_PROVIDER}
+      REALTIME_SESSION_URL: ${REALTIME_SESSION_URL}
+      REALTIME_PROVIDER_TOKEN: ${REALTIME_PROVIDER_TOKEN}
+      BODY_SCAN_PROVIDER: ${BODY_SCAN_PROVIDER}
+      BODY_SCAN_WORKER_URL: ${BODY_SCAN_WORKER_URL}
+      BODY_SCAN_WORKER_TOKEN: ${BODY_SCAN_WORKER_TOKEN}
+      CONTENT_SAFETY_PROVIDER: ${CONTENT_SAFETY_PROVIDER}
+      CONTENT_SAFETY_URL: ${CONTENT_SAFETY_URL}
+      CONTENT_SAFETY_TOKEN: ${CONTENT_SAFETY_TOKEN}
+    volumes:
+      - app-data:/data
+    networks:
+      - private
+
+  fashn-worker:
+    profiles: ["gpu"]
+    build:
+      context: ./workers/fashn_vton
+    restart: unless-stopped
+    environment:
+      FASHN_WEIGHTS_DIR: /weights
+      FASHN_OUTPUT_DIR: /outputs
+      FASHN_WORKER_TOKEN: ${FASHN_WORKER_TOKEN}
+    volumes:
+      - ${FASHN_WEIGHTS_HOST_PATH}:/weights:ro
+      - worker-output:/outputs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - private
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - private
+
+volumes:
+  app-data:
+  worker-output:
+  caddy-data:
+  caddy-config:
+
+networks:
+  private:

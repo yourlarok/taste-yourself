@@ -1,0 +1,170 @@
+<view class="mirror-page">
+  <camera
+    wx:if="{{inStudio &amp;&amp; cameraAvailable &amp;&amp; !liveStreamActive}}"
+    class="camera-surface"
+    device-position="front"
+    mode="normal"
+    binderror="handleCameraError"
+  />
+  <live-pusher
+    wx:if="{{liveStreamActive}}"
+    id="livePusher"
+    class="live-pusher-source"
+    url="{{livePublishUrl}}"
+    mode="RTC"
+    muted="{{true}}"
+    enable-camera="{{true}}"
+    bindstatechange="handleLiveState"
+    binderror="handleLiveFailure"
+  />
+  <live-player
+    wx:if="{{liveStreamActive}}"
+    id="livePlayer"
+    class="live-player-surface"
+    src="{{livePlayUrl}}"
+    mode="live"
+    autoplay="{{true}}"
+    muted="{{true}}"
+    object-fit="fillCrop"
+    bindstatechange="handleLiveState"
+    binderror="handleLiveFailure"
+  />
+  <view wx:if="{{!inStudio || !cameraAvailable}}" class="ambient-surface">
+    <view class="portrait-silhouette"></view>
+  </view>
+  <image
+    wx:if="{{resultImageUrl}}"
+    class="result-surface"
+    src="{{resultImageUrl}}"
+    mode="aspectFill"
+    bindtap="clearResultImage"
+  />
+  <text wx:if="{{resultImageUrl}}" class="ai-result-notice">{{resultNotice}}</text>
+  <view class="surface-shade"></view>
+
+  <view class="topbar safe-top">
+    <text class="brand">试衣镜</text>
+    <button class="quiet-button" bindtap="openAccountSheet" aria-label="打开我的数据">我的</button>
+  </view>
+
+  <block wx:if="{{!inStudio}}">
+    <view class="intro-copy">
+      <text class="intro-title">今天想试什么？</text>
+      <text class="intro-subtitle">把衣服带到镜前，看看不同穿法和松紧差异。</text>
+    </view>
+
+    <view class="home-dock safe-bottom">
+      <button class="recent-row" bindtap="enterStudio">
+        <view class="recent-thumb">
+          <image wx:if="{{recentImageUrl}}" src="{{recentImageUrl}}" mode="aspectFill" />
+        </view>
+        <view class="recent-copy">
+          <text class="recent-title">{{recentGarmentName}}</text>
+          <text class="recent-meta">{{recentTimeLabel}}</text>
+        </view>
+        <text class="chevron">›</text>
+      </button>
+      <button class="primary-button" bindtap="enterStudio">进入镜前</button>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="studio-top safe-top">
+      <button class="glass-button" bindtap="leaveStudio">返回</button>
+      <text class="mode-pill">{{modeLabel}}</text>
+      <button class="glass-button compact" bindtap="saveResultImage">保存</button>
+    </view>
+
+    <view wx:if="{{!cameraAvailable}}" class="camera-message">{{cameraMessage}}</view>
+    <view wx:if="{{liveRemaining > 0}}" class="countdown">实时试衣 · {{liveRemaining}}s</view>
+    <button
+      wx:if="{{liveRemaining === 0 &amp;&amp; !scanActive}}"
+      class="capture-button"
+      bindtap="captureStaticTryOn"
+    >定格试穿</button>
+
+    <view wx:if="{{scanActive}}" class="scan-guide">
+      <view class="body-outline"></view>
+      <text class="scan-progress">{{scanProgress}}</text>
+      <text class="scan-instruction">{{scanInstruction}}</text>
+      <text wx:if="{{scanCountdown > 0}}" class="scan-countdown">{{scanCountdown}}</text>
+      <button class="scan-cancel" bindtap="cancelBodyScan">取消</button>
+    </view>
+
+    <view wx:if="{{!scanActive}}" class="studio-dock safe-bottom">
+      <scroll-view class="garment-rail" scroll-x enable-flex>
+        <button
+          wx:for="{{garments}}"
+          wx:key="id"
+          class="garment-chip garment-{{item.tone}} {{activeGarment === index ? 'is-active' : ''}}"
+          data-index="{{index}}"
+          bindtap="chooseGarment"
+          aria-label="{{item.name}}"
+        >
+          <image wx:if="{{item.imageUrl}}" class="garment-image" src="{{item.imageUrl}}" mode="aspectFill" />
+        </button>
+        <button class="garment-chip garment-add" bindtap="addGarment" aria-label="添加衣服">＋</button>
+      </scroll-view>
+
+      <view class="tool-row">
+        <button class="analysis-button" bindtap="openFitAnalysis">查看尺码差异</button>
+        <button class="live-button" bindtap="startLiveTryOn" disabled="{{liveRemaining > 0}}">
+          {{liveRemaining > 0 ? liveRemaining + 's' : '动一下 · 15s'}}
+        </button>
+      </view>
+    </view>
+  </block>
+
+  <view wx:if="{{sheet !== 'none'}}" class="sheet-mask" bindtap="closeSheet"></view>
+
+  <view wx:if="{{sheet === 'analysis'}}" class="bottom-sheet safe-bottom-sheet">
+    <view class="sheet-handle"></view>
+    <view class="sheet-heading">
+      <text>这件衣服的尺码差异</text>
+      <button class="sheet-close" bindtap="closeSheet">关闭</button>
+    </view>
+    <view wx:for="{{sizeAnalysis}}" wx:key="label" class="size-row">
+      <text class="size-label">{{item.label}}</text>
+      <view class="size-copy">
+        <text>{{item.detail}}</text>
+        <text class="size-note">{{item.note}}</text>
+      </view>
+    </view>
+    <text class="analysis-notice">仅展示测量数据与参考区间，不为尺码排序。</text>
+  </view>
+
+  <view wx:if="{{sheet === 'scan'}}" class="bottom-sheet safe-bottom-sheet">
+    <view class="sheet-handle"></view>
+    <text class="scan-title">先建立一次尺寸画像</text>
+    <text class="scan-copy">跟随语音站好、转身，画面合格后会自动采集。约 20 秒，可以跳过。</text>
+    <button class="primary-button" bindtap="startBodyScan">开始相机扫描</button>
+    <button class="secondary-button" bindtap="skipBodyScan">暂不扫描</button>
+  </view>
+
+  <view wx:if="{{sheet === 'insufficient'}}" class="bottom-sheet safe-bottom-sheet">
+    <view class="sheet-handle"></view>
+    <text class="scan-title">暂时无法比较尺码差异</text>
+    <text class="scan-copy">还缺少胸、腰、臀等人体尺寸。你仍然可以继续试穿和使用 15 秒动态模式。</text>
+    <button class="secondary-button" bindtap="closeSheet">继续试穿</button>
+  </view>
+
+  <view wx:if="{{sheet === 'product-data-missing'}}" class="bottom-sheet safe-bottom-sheet">
+    <view class="sheet-handle"></view>
+    <text class="scan-title">这件衣服还没有尺码数据</text>
+    <text class="scan-copy">需要商家的各尺码成衣实测数据后，才能比较穿着余量。现在仍可继续视觉试穿。</text>
+    <button class="secondary-button" bindtap="closeSheet">继续试穿</button>
+  </view>
+
+  <view wx:if="{{sheet === 'account'}}" class="bottom-sheet safe-bottom-sheet">
+    <view class="sheet-handle"></view>
+    <view class="sheet-heading">
+      <text>我的数据</text>
+      <button class="sheet-close" bindtap="closeSheet">关闭</button>
+    </view>
+    <text class="scan-copy">衣服、人像和尺寸画像只用于试衣体验。你可以清除本机画像标记，或删除服务端全部数据。</text>
+    <text class="usage-summary">{{usageSummary}}</text>
+    <button class="privacy-button" bindtap="openPrivacyContract">查看隐私保护指引</button>
+    <button class="secondary-button" bindtap="clearFitProfile">清除尺寸画像</button>
+    <button class="danger-button" bindtap="deleteAllData">删除全部数据</button>
+  </view>
+</view>

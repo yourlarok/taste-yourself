@@ -1,0 +1,34 @@
+{
+  "profile": {
+    "user_id": "demo-user",
+    "preference": "regular",
+    "measurements": {
+      "height_cm": 172,
+      "weight_kg": 66,
+      "chest_cm": 92
+    }
+  },
+  "product": {
+    "product_id": "demo-tee-001",
+    "brand": "Demo Brand",
+    "category": "top",
+    "stretch_percent": 5,
+    "variants": [
+      {
+        "sku_id": "demo-tee-001-m",
+        "size_label": "M",
+        "measurements_cm": {"chest_cm": 96}
+      },
+      {
+        "sku_id": "demo-tee-001-l",
+        "size_label": "L",
+        "measurements_cm": {"chest_cm": 102}
+      },
+      {
+        "sku_id": "demo-tee-001-xl",
+        "size_label": "XL",
+        "measurements_cm": {"chest_cm": 108}
+      }
+    ]
+  }
+}
