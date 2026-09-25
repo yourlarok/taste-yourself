@@ -1,14 +1,18 @@
 <view class="stage" hover-class="stage-press" hover-stay-time="80" bindtap="onEnter">
 
-  <!-- 有最近试穿：结果图铺底 + 明确动作 -->
+  <!-- 有最近试穿：结果图铺底 + 编辑式说明牌 -->
   <block wx:if="{{mode === 'recent'}}">
     <image class="stage__bg" src="{{resultImage}}" mode="aspectFill"></image>
     <view class="stage__veil"></view>
-    <view class="stage__recent">
+    <view class="stage__plate">
+      <text class="stage__eyebrow">上次试穿</text>
       <text class="stage__gname">{{garmentName}}</text>
-      <text class="stage__time">上次试穿 · {{updatedText}}</text>
+      <text class="stage__time">{{updatedText}}</text>
       <view class="stage__actions">
-        <view class="stage__pill" hover-class="tap-dim">继续上次试穿</view>
+        <view class="stage__pill" hover-class="btn-press">
+          <text>继续上次试穿</text>
+          <text class="i i-arrow"></text>
+        </view>
         <view class="stage__ghost" catchtap="onChange" hover-class="tap-dim">更换衣服</view>
       </view>
     </view>
@@ -17,32 +21,34 @@
   <!-- 首次使用：镜面三步引导，全区域可点 -->
   <block wx:else>
     <view class="stage__mirror">
+      <view class="stage__sheen"></view>
+
       <view class="stage__steps">
         <view class="stage__step">
-          <text class="stage__no">①</text>
+          <text class="stage__no">01</text>
           <text class="stage__step-text">选择或拍一件衣服</text>
         </view>
-        <view class="stage__step-line"></view>
         <view class="stage__step">
-          <text class="stage__no">②</text>
+          <text class="stage__no">02</text>
           <text class="stage__step-text">站到镜前</text>
         </view>
-        <view class="stage__step-line"></view>
         <view class="stage__step">
-          <text class="stage__no">③</text>
+          <text class="stage__no">03</text>
           <text class="stage__step-text">生成试穿照</text>
         </view>
       </view>
 
       <view class="stage__demo">
-        <image class="stage__demo-img" src="{{demoImage}}" mode="aspectFill"></image>
+        <view class="stage__demo-frame">
+          <image class="stage__demo-img" src="{{demoImage}}" mode="aspectFill"></image>
+        </view>
+        <text class="stage__demo-eyebrow">示例衣服</text>
         <text class="stage__demo-text">{{demoName}}</text>
-        <text class="stage__demo-sub">可先用示例衣服体验</text>
       </view>
 
       <view class="stage__hint">
         <text class="stage__hint-text">{{hintText}}</text>
-        <text class="stage__hint-arrow">→</text>
+        <text class="i i-arrow stage__hint-arrow"></text>
       </view>
     </view>
   </block>

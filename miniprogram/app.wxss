@@ -12,7 +12,145 @@ view, text, image, scroll-view {
   box-sizing: border-box;
 }
 
-/* 通用加载骨架：呼吸明暗，不使用色块冒充最终内容（骨架仅出现在加载中） */
+/* ---------------- 纯 CSS 图标体系（currentColor，font-size 控制尺寸） ---------------- */
+.i {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  color: inherit;
+  flex: none;
+}
+
+.i::before, .i::after {
+  content: "";
+  box-sizing: border-box;
+}
+
+/* 返回 / 前进箭头 */
+.i-back::before {
+  width: 0.6em;
+  height: 0.6em;
+  border-left: 0.085em solid currentColor;
+  border-bottom: 0.085em solid currentColor;
+  border-radius: 0.05em;
+  transform: rotate(45deg);
+  margin-left: 0.2em;
+}
+
+.i-arrow::before {
+  width: 0.6em;
+  height: 0.6em;
+  border-right: 0.085em solid currentColor;
+  border-top: 0.085em solid currentColor;
+  border-radius: 0.05em;
+  transform: rotate(45deg);
+  margin-right: 0.2em;
+}
+
+/* 关闭 */
+.i-close::before, .i-close::after {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.86em;
+  height: 0.085em;
+  margin: -0.0425em 0 0 -0.43em;
+  background: currentColor;
+  border-radius: 0.05em;
+}
+
+.i-close::before { transform: rotate(45deg); }
+.i-close::after { transform: rotate(-45deg); }
+
+/* 加号 */
+.i-plus::before, .i-plus::after {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: currentColor;
+  border-radius: 0.05em;
+}
+
+.i-plus::before { width: 0.86em; height: 0.085em; margin: -0.0425em 0 0 -0.43em; }
+.i-plus::after { width: 0.085em; height: 0.86em; margin: -0.43em 0 0 -0.0425em; }
+
+/* 对勾 */
+.i-check::before {
+  width: 0.7em;
+  height: 0.38em;
+  border-left: 0.1em solid currentColor;
+  border-bottom: 0.1em solid currentColor;
+  border-radius: 0.04em;
+  transform: rotate(-45deg);
+  margin-top: -0.14em;
+}
+
+/* 保存（向下 + 托盘） */
+.i-save::before {
+  position: absolute;
+  left: 50%;
+  top: 0.18em;
+  width: 0.4em;
+  height: 0.4em;
+  margin-left: -0.2em;
+  border-right: 0.09em solid currentColor;
+  border-bottom: 0.09em solid currentColor;
+  border-radius: 0.04em;
+  transform: rotate(45deg);
+}
+
+.i-save::after {
+  position: absolute;
+  left: 50%;
+  bottom: 0.16em;
+  width: 0.88em;
+  height: 0.09em;
+  margin-left: -0.44em;
+  background: currentColor;
+  border-radius: 0.05em;
+}
+
+/* 用户 */
+.i-user::before {
+  position: absolute;
+  left: 50%;
+  top: 0.1em;
+  width: 0.34em;
+  height: 0.34em;
+  margin-left: -0.17em;
+  border: 0.09em solid currentColor;
+  border-radius: 50%;
+}
+
+.i-user::after {
+  position: absolute;
+  left: 50%;
+  bottom: 0.1em;
+  width: 0.74em;
+  height: 0.32em;
+  margin-left: -0.37em;
+  border: 0.09em solid currentColor;
+  border-bottom: none;
+  border-radius: 0.74em 0.74em 0 0;
+}
+
+/* ---------------- 减少动态效果 ---------------- */
+.reduce-motion,
+.reduce-motion view,
+.reduce-motion text,
+.reduce-motion image,
+.reduce-motion scroll-view,
+.reduce-motion mirror-stage,
+.reduce-motion state-feedback {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+}
+
+/* ---------------- 骨架与加载 ---------------- */
 .skeleton {
   position: relative;
   overflow: hidden;
@@ -27,7 +165,7 @@ view, text, image, scroll-view {
   top: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(90deg, rgba(253, 251, 247, 0) 0%, rgba(253, 251, 247, 0.65) 50%, rgba(253, 251, 247, 0) 100%);
   animation: skeleton-sweep 1.4s var(--ease) infinite;
 }
 
@@ -36,18 +174,17 @@ view, text, image, scroll-view {
   100% { transform: translateX(100%); }
 }
 
-/* 通用加载指示 */
 .spinner {
   width: 32rpx;
   height: 32rpx;
   border-radius: 50%;
-  border: 3rpx solid var(--line-strong);
+  border: 2rpx solid var(--line-strong);
   border-top-color: var(--accent);
   animation: spin 0.9s linear infinite;
 }
 
 .spinner--light {
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.32);
   border-top-color: #FFFFFF;
 }
 

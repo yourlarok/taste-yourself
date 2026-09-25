@@ -10,10 +10,10 @@
 
 .stage-press {
   transform: scale(0.985);
-  opacity: 0.92;
+  opacity: 0.94;
 }
 
-/* ---- recent ---- */
+/* ---- recent：结果图 + 说明牌 ---- */
 .stage__bg {
   position: absolute;
   left: 0;
@@ -27,11 +27,11 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 55%;
-  background: linear-gradient(180deg, rgba(32, 27, 22, 0) 0%, rgba(32, 27, 22, 0.55) 100%);
+  height: 62%;
+  background: linear-gradient(180deg, rgba(28, 23, 18, 0) 0%, rgba(28, 23, 18, 0.62) 100%);
 }
 
-.stage__recent {
+.stage__plate {
   position: absolute;
   left: var(--s4);
   right: var(--s4);
@@ -40,17 +40,26 @@
   flex-direction: column;
 }
 
+.stage__eyebrow {
+  font-size: 20rpx;
+  letter-spacing: 6rpx;
+  color: rgba(255, 255, 255, 0.72);
+}
+
 .stage__gname {
+  margin-top: 6rpx;
+  font-family: var(--serif);
   color: #FFFFFF;
-  font-size: var(--f-l);
+  font-size: 46rpx;
   font-weight: 600;
-  letter-spacing: 1rpx;
+  letter-spacing: 2rpx;
 }
 
 .stage__time {
-  margin-top: 4rpx;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: var(--f-s);
+  margin-top: 2rpx;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: var(--f-xs);
+  letter-spacing: 1rpx;
 }
 
 .stage__actions {
@@ -61,42 +70,81 @@
 }
 
 .stage__pill {
-  min-height: 80rpx;
+  min-height: 84rpx;
   padding: 0 var(--s4);
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(253, 251, 247, 0.94);
   color: var(--ink-1);
-  font-size: var(--f-m);
+  font-size: var(--f-s);
   font-weight: 600;
+  letter-spacing: 1rpx;
   display: flex;
+  flex-direction: row;
   align-items: center;
+}
+
+.stage__pill .i-arrow {
+  font-size: 30rpx;
+  margin-left: var(--s1);
 }
 
 .stage__ghost {
   margin-left: var(--s3);
-  min-height: 80rpx;
+  min-height: 84rpx;
   display: flex;
   align-items: center;
-  color: rgba(255, 255, 255, 0.88);
-  font-size: var(--f-s);
-  text-decoration: underline;
-  text-underline-offset: 8rpx;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--f-xs);
+  letter-spacing: 2rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.45);
 }
 
-/* ---- empty ---- */
+/* ---- empty：镜面 ---- */
 .stage__mirror {
   position: absolute;
   left: var(--s3);
   right: var(--s3);
   top: var(--s3);
   bottom: var(--s3);
-  border: 2rpx solid var(--line-strong);
-  border-radius: 220rpx 220rpx var(--r-l) var(--r-l);
-  background: linear-gradient(165deg, #F7F2E9 0%, #EFE7D9 58%, #EAE0CF 100%);
+  border: 1rpx solid var(--line-strong);
+  border-radius: 240rpx 240rpx var(--r-l) var(--r-l);
+  background: linear-gradient(168deg, #F9F5EC 0%, #F1EADC 55%, #EAE1CE 100%);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: var(--s6) var(--s5) var(--s5);
+  overflow: hidden;
+}
+
+/* 内侧第二道发丝线，镜面装裱感 */
+.stage__mirror::before {
+  content: "";
+  position: absolute;
+  left: 14rpx;
+  right: 14rpx;
+  top: 14rpx;
+  bottom: 14rpx;
+  border: 1rpx solid rgba(207, 194, 173, 0.6);
+  border-radius: 226rpx 226rpx 24rpx 24rpx;
+  pointer-events: none;
+}
+
+/* 缓慢掠过的柔光 */
+.stage__sheen {
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -30%;
+  width: 45%;
+  background: linear-gradient(105deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
+  transform: skewX(-12deg);
+  animation: sheen 7s var(--ease) infinite;
+  pointer-events: none;
+}
+
+@keyframes sheen {
+  0%, 55% { left: -45%; }
+  85%, 100% { left: 130%; }
 }
 
 .stage__steps {
@@ -108,58 +156,66 @@
 .stage__step {
   display: flex;
   flex-direction: row;
-  align-items: center;
-  min-height: 56rpx;
+  align-items: baseline;
+  min-height: 72rpx;
+}
+
+.stage__step + .stage__step {
+  border-top: 1rpx solid rgba(207, 194, 173, 0.55);
 }
 
 .stage__no {
-  color: var(--accent);
+  width: 72rpx;
+  font-family: var(--serif);
   font-size: var(--f-m);
-  margin-right: var(--s2);
+  color: var(--accent);
+  letter-spacing: 2rpx;
 }
 
 .stage__step-text {
   color: var(--ink-1);
   font-size: var(--f-m);
-}
-
-.stage__step-line {
-  width: 2rpx;
-  height: 28rpx;
-  margin-left: 14rpx;
-  background: var(--line-strong);
+  letter-spacing: 2rpx;
 }
 
 .stage__demo {
   position: absolute;
-  right: var(--s4);
-  top: 34%;
-  width: 200rpx;
+  right: var(--s5);
+  top: 30%;
+  width: 216rpx;
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
 
-.stage__demo-img {
-  width: 200rpx;
-  height: 250rpx;
-  border-radius: var(--r-m);
+.stage__demo-frame {
+  padding: 10rpx;
+  background: var(--surface);
+  border: 1rpx solid var(--line);
   box-shadow: var(--shadow-2);
 }
 
+.stage__demo-img {
+  width: 100%;
+  height: 244rpx;
+  display: block;
+}
+
+.stage__demo-eyebrow {
+  margin-top: var(--s2);
+  font-size: 18rpx;
+  letter-spacing: 5rpx;
+  color: var(--ink-3);
+}
+
 .stage__demo-text {
-  margin-top: var(--s1);
-  font-size: var(--f-xs);
+  margin-top: 2rpx;
+  font-family: var(--serif);
+  font-size: var(--f-s);
   color: var(--ink-1);
-  max-width: 220rpx;
+  max-width: 240rpx;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-.stage__demo-sub {
-  font-size: var(--f-xs);
-  color: var(--ink-3);
 }
 
 .stage__hint {
@@ -167,17 +223,18 @@
   flex-direction: row;
   align-items: center;
   align-self: center;
+  padding-bottom: var(--s1);
 }
 
 .stage__hint-text {
   color: var(--accent-deep);
-  font-size: var(--f-m);
+  font-size: var(--f-s);
   font-weight: 600;
-  letter-spacing: 2rpx;
+  letter-spacing: 5rpx;
 }
 
 .stage__hint-arrow {
-  margin-left: var(--s1);
+  font-size: 30rpx;
   color: var(--accent-deep);
-  font-size: var(--f-m);
+  margin-left: var(--s2);
 }

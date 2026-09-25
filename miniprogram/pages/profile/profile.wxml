@@ -1,7 +1,7 @@
 <view class="page" wx:if="{{layout}}" style="padding-top: {{layout.statusBarHeight}}px;">
 
   <view class="nav" style="height: {{layout.navContentHeight}}px;">
-    <view class="nav__back" bindtap="onBack" hover-class="tap-dim">‹</view>
+    <view class="nav__back" bindtap="onBack" hover-class="tap-dim"><text class="i i-back"></text></view>
     <text class="nav__title">我的</text>
   </view>
 
@@ -64,7 +64,7 @@
     <view class="section">
       <view class="row row--tap" bindtap="onTogglePrivacy" hover-class="tap-dim">
         <text class="row__label">隐私保护指引</text>
-        <text class="row__arrow {{privacyOpen ? 'is-open' : ''}}">›</text>
+        <text class="i i-arrow row__arrow {{privacyOpen ? 'is-open' : ''}}"></text>
       </view>
       <view wx:if="{{privacyOpen}}" class="privacy">
         <text class="privacy__text">· 试穿画面只用于生成当次试穿照，不做其他用途。</text>

@@ -9,7 +9,7 @@
       <text class="fs__subtitle" wx:if="{{garmentName}}">{{garmentName}} · 按商品原始尺码顺序 · 仅作分析，不作推荐</text>
       <text class="fs__subtitle" wx:else>按商品原始尺码顺序 · 仅作分析，不作推荐</text>
     </view>
-    <view class="fs__close" bindtap="onClose" hover-class="tap-dim">×</view>
+    <view class="fs__close" bindtap="onClose" hover-class="tap-dim"><text class="i i-close"></text></view>
   </view>
 
   <!-- 缺少尺寸画像：先解释，再由用户决定 -->
@@ -77,7 +77,7 @@
       <view class="fs-row__head" data-index="{{index}}" bindtap="onToggleRow" hover-class="tap-dim">
         <text class="fs-row__size">{{item.size}}</text>
         <text class="fs-row__tag fs-row__tag--{{item.tone}}">{{item.tag}}</text>
-        <text class="fs-row__arrow {{expandedIndex === index ? 'is-open' : ''}}">›</text>
+        <text class="i i-arrow fs-row__arrow {{expandedIndex === index ? 'is-open' : ''}}"></text>
       </view>
       <text class="fs-row__summary">{{item.summary}}</text>
 
@@ -101,7 +101,7 @@
     <view class="fs-source">
       <view class="fs-source__head" bindtap="onToggleSource" hover-class="tap-dim">
         <text class="fs-source__title">数据来源与测量误差</text>
-        <text class="fs-row__arrow {{sourceOpen ? 'is-open' : ''}}">›</text>
+        <text class="i i-arrow fs-row__arrow {{sourceOpen ? 'is-open' : ''}}"></text>
       </view>
       <text wx:if="{{sourceOpen}}" class="fs-source__text">{{sourceText}}</text>
     </view>

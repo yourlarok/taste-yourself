@@ -1,8 +1,8 @@
-<view class="studio" wx:if="{{layout}}">
+<view class="studio {{reduceMotion ? 'reduce-motion' : ''}}" wx:if="{{layout}}">
 
   <!-- 画布层：相机 / 结果图 / 取景占位 -->
   <camera
-    wx:if="{{showCamera}}"
+    wx:if="{{showCamera && !realtimeHasStream}}"
     class="canvas"
     device-position="front"
     flash="off"
@@ -10,6 +10,30 @@
     binderror="onCameraError"
     bindinitdone="onCameraInit"
   ></camera>
+
+  <!-- 真实动态链路：推送相机流，并以服务端换装流覆盖主画布。 -->
+  <live-pusher
+    wx:if="{{realtimeHasStream}}"
+    class="canvas rt-pusher"
+    url="{{realtimePublishUrl}}"
+    mode="RTC"
+    autopush
+    enable-camera
+    enable-mic="{{false}}"
+    beauty="0"
+    whiteness="0"
+    binderror="onRealtimeMediaError"
+  ></live-pusher>
+  <live-player
+    wx:if="{{realtimeHasStream}}"
+    class="canvas rt-player"
+    src="{{realtimePlayUrl}}"
+    mode="RTC"
+    autoplay
+    muted
+    object-fit="fillCrop"
+    binderror="onRealtimeMediaError"
+  ></live-player>
 
   <view wx:if="{{phase === 'result'}}" class="canvas" bindtap="onTapResult">
     <image class="canvas__img" src="{{resultImage}}" mode="aspectFill"></image>
@@ -26,27 +50,34 @@
     <view wx:if="{{cameraAuth === 'denied'}}" class="canvas__auth" bindtap="onOpenSetting" hover-class="btn-press">开启相机权限</view>
   </view>
 
-  <!-- 生成中：可感知进度，阻断重复提交 -->
-  <view wx:if="{{phase === 'capturing' || phase === 'generating'}}" class="genmask">
-    <view class="spinner spinner--light"></view>
-    <text class="genmask__text">{{generatingText}}</text>
-  </view>
-
-  <!-- 顶部：返回 / 一行状态 / 保存（右侧避开胶囊） -->
+  <!-- 顶部：返回 / 状态胶囊 / 保存（均避让胶囊与安全区） -->
   <view class="top" style="padding-top: {{layout.statusBarHeight}}px; height: {{layout.navBarHeight}}px;">
-    <view class="top__back" bindtap="onBack" hover-class="tap-dim">‹</view>
-    <text class="top__status">{{statusLine}}</text>
+    <view class="top__btn" bindtap="onBack" hover-class="tap-dim"><text class="i i-back"></text></view>
+    <view class="top__status"><text class="top__status-text">{{statusLine}}</text></view>
     <view
-      wx:if="{{phase === 'result'}}"
-      class="top__save"
+      wx:if="{{phase === 'result' && realtimeState === 'idle'}}"
+      class="top__btn top__btn--save"
       style="right: {{layout.capsuleRightGap}}px; top: {{layout.statusBarHeight + layout.navContentHeight / 2}}px;"
       bindtap="onSave"
       hover-class="tap-dim"
-    >保存</view>
+    ><text class="i i-save"></text></view>
+  </view>
+
+  <!-- 生成进度线：可感知、不遮挡 -->
+  <view wx:if="{{phase === 'capturing' || phase === 'generating'}}" class="progress" style="top: {{layout.navBarHeight + 4}}px;">
+    <view class="progress__bar"></view>
+  </view>
+
+  <!-- 生成中遮罩：阻断重复提交 -->
+  <view wx:if="{{phase === 'capturing' || phase === 'generating'}}" class="genmask">
+    <view class="genmask__box">
+      <view class="spinner spinner--light"></view>
+      <text class="genmask__text">{{generatingText}}</text>
+    </view>
   </view>
 
   <!-- 降级 / 错误横幅：不长期占据大面积 -->
-  <view wx:if="{{banner.show}}" class="banner" style="top: {{layout.navBarHeight + 8}}px;">
+  <view wx:if="{{banner.show}}" class="banner" style="top: {{layout.navBarHeight + 12}}px;">
     <state-feedback
       kind="banner"
       tone="warn"
@@ -60,14 +91,16 @@
   </view>
 
   <!-- 动态试衣倒计时：始终可见 -->
-  <view wx:if="{{realtimeState === 'active'}}" class="rt" style="top: {{layout.navBarHeight + 24}}px;">
+  <view wx:if="{{realtimeState === 'active'}}" class="rt" style="top: {{layout.navBarHeight + 28}}px;">
     <text class="rt__num">{{countdown}}</text>
     <text class="rt__unit">秒</text>
   </view>
 
-  <!-- AI 生成提示 -->
-  <view wx:if="{{phase === 'result'}}" class="ai-chip" style="bottom: {{layout.safeBottom + 300}}px;">
-    AI 生成效果，仅供视觉体验
+  <!-- 结果签名版：编辑式说明牌，含 AI 生成提示 -->
+  <view wx:if="{{phase === 'result' && realtimeState === 'idle'}}" class="plate" style="bottom: {{layout.safeBottom + 312}}px;">
+    <text class="plate__eyebrow">试穿照 · AI 生成效果，仅供视觉体验</text>
+    <text class="plate__title">{{selectedGarmentName}}</text>
+    <text class="plate__meta">{{resultTimeText}} · 点击画面返回相机</text>
   </view>
 
   <!-- 底部操作层 -->

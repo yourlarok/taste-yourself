@@ -1,7 +1,7 @@
 <scroll-view class="gs" scroll-x enhanced show-scrollbar="{{false}}">
   <view class="gs__row">
 
-    <text class="gs__section">示例衣服</text>
+    <text class="gs__section">示例</text>
     <view
       wx:for="{{catalogView}}"
       wx:key="id"
@@ -13,12 +13,12 @@
       <view class="gs__thumb">
         <image wx:if="{{!item.broken}}" src="{{item.image}}" mode="aspectFill" data-id="{{item.id}}" binderror="onImageError"></image>
         <view wx:else class="gs__broken">图片失效</view>
-        <view wx:if="{{item.id === selectedId}}" class="gs__check">✓</view>
+        <view wx:if="{{item.id === selectedId}}" class="gs__check"><text class="i i-check"></text></view>
       </view>
       <text class="gs__name">{{item.name}}</text>
     </view>
 
-    <text class="gs__section">我的衣橱</text>
+    <text class="gs__section">衣橱</text>
     <block wx:if="{{wardrobeView.length > 0}}">
       <view
         wx:for="{{wardrobeView}}"
@@ -31,7 +31,7 @@
         <view class="gs__thumb">
           <image wx:if="{{!item.broken}}" src="{{item.image}}" mode="aspectFill" data-id="{{item.id}}" binderror="onImageError"></image>
           <view wx:else class="gs__broken">图片失效</view>
-          <view wx:if="{{item.id === selectedId}}" class="gs__check">✓</view>
+          <view wx:if="{{item.id === selectedId}}" class="gs__check"><text class="i i-check"></text></view>
         </view>
         <text class="gs__name">{{item.name}}</text>
       </view>
@@ -59,7 +59,7 @@
     <!-- 添加衣服：轨道末尾 -->
     <view class="gs__item gs__item--static" bindtap="onAdd" hover-class="tap-dim">
       <view class="gs__thumb gs__thumb--add">
-        <text class="gs__add-icon">＋</text>
+        <text class="i i-plus gs__add-icon"></text>
         <text class="gs__add-text">添加衣服</text>
       </view>
       <text class="gs__name">　</text>

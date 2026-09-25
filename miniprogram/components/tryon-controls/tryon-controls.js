@@ -1,5 +1,6 @@
 // tryon-controls — 镜前底部操作层。
-// “生成试穿照”是唯一主操作；“尺码差异”“动态试衣 · 15 秒”为视觉权重更低的二级入口；
+// “生成试穿照”是唯一主操作（快门语义，主标题 + 当前衣服副标题）；
+// “尺码差异”“动态试衣 · 15 秒”为视觉权重更低的二级入口；
 // 动态进行中切换为倒计时上下文，可提前结束。
 Component({
   properties: {
@@ -13,17 +14,16 @@ Component({
 
   data: {
     mainText: '生成试穿照',
+    subText: '',
     busy: false,
     realtimeUi: false
   },
 
   observers: {
     'phase, garmentName': function (phase, garmentName) {
-      let text = '生成试穿照';
-      if (phase === 'result') text = '重新生成试穿照';
-      else if (garmentName) text = '生成试穿照 · ' + garmentName;
       this.setData({
-        mainText: text,
+        mainText: phase === 'result' ? '重新生成试穿照' : '生成试穿照',
+        subText: garmentName || '先在下方选择一件衣服',
         busy: phase === 'capturing' || phase === 'generating'
       });
     },

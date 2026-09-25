@@ -1,22 +1,28 @@
-/* tokens.wxss — 设计 token：色彩 / 间距 / 圆角 / 字号 / 阴影 / 动效
- * 气质：安静、克制、可信、偏编辑设计。暖中性色 + 一个低饱和强调色。
- * 颜色不用于表达“尺码正确/错误”，只表达信息层级；danger 仅用于删除类危险操作。
+/* tokens.wxss — 设计 token v2：纸感编辑风
+ * 气质：安静、克制、可信、偏编辑设计。
+ * 暖纸底色 + 深墨文字 + 单一低饱和陶土强调色（只作点缀：选中、序号、进度）。
+ * 颜色不用于表达“尺码正确/错误”；danger 仅用于删除类危险操作。
  */
 page {
   /* 色彩 */
-  --bg: #FAF7F1;
-  --surface: #FFFFFF;
-  --surface-warm: #F3EDE3;
-  --ink-1: #2B2620;
-  --ink-2: #7D7266;
-  --ink-3: #AFA393;
-  --line: #E7DFD2;
-  --line-strong: #D5C9B6;
-  --accent: #A26E4B;
-  --accent-deep: #875636;
-  --accent-soft: #F1E4D7;
-  --mask: rgba(32, 27, 22, 0.45);
+  --bg: #F7F3EC;              /* 暖纸 */
+  --surface: #FDFBF7;         /* 纸面 */
+  --surface-warm: #EFE8DB;    /* 深一点的纸 */
+  --ink-1: #211B14;           /* 主文字：深墨 */
+  --ink-2: #796E5F;
+  --ink-3: #ACA08D;
+  --line: #E4DACA;            /* 发丝线 */
+  --line-strong: #CFC2AD;
+  --accent: #9A6A45;          /* 陶土 */
+  --accent-deep: #7C5132;
+  --accent-soft: #EEE1CF;
+  --mask: rgba(28, 23, 18, 0.48);
   --danger: #A8543F;
+  --frost: rgba(38, 32, 25, 0.42);          /* 镜前磨砂控件底 */
+  --frost-light: rgba(255, 255, 255, 0.14); /* 磨砂上的发丝边 */
+
+  /* 字体 */
+  --serif: Georgia, "Times New Roman", "Songti SC", "STSong", serif;
 
   /* 间距：8rpx 基线 */
   --s1: 8rpx;
@@ -42,9 +48,9 @@ page {
   --f-xl: 44rpx;
   --f-xxl: 56rpx;
 
-  /* 阴影 */
-  --shadow-1: 0 6rpx 24rpx rgba(43, 38, 32, 0.07);
-  --shadow-2: 0 16rpx 48rpx rgba(43, 38, 32, 0.14);
+  /* 阴影：低、软、暖 */
+  --shadow-1: 0 4rpx 20rpx rgba(33, 27, 20, 0.06);
+  --shadow-2: 0 18rpx 48rpx rgba(33, 27, 20, 0.12);
 
   /* 动效：单次 180–280ms，仅用于连续性与状态反馈 */
   --dur-fast: 180ms;
@@ -53,14 +59,21 @@ page {
   --ease: cubic-bezier(0.22, 0.8, 0.32, 1);
 }
 
-/* 通用按压反馈：所有可点区域统一使用，保证可感知且克制 */
+/* 通用按压反馈 */
 .tap-dim {
-  opacity: 0.55;
+  opacity: 0.5;
   transition: opacity var(--dur-fast) var(--ease);
 }
 
 .btn-press {
-  opacity: 0.88;
-  transform: scale(0.985);
+  opacity: 0.86;
+  transform: scale(0.982);
   transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+/* 编辑式小标签：宽字距中文 / 小字号 */
+.eyebrow {
+  font-size: 20rpx;
+  letter-spacing: 6rpx;
+  color: var(--ink-3);
 }

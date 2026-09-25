@@ -9,6 +9,7 @@ const app = getApp();
 Page({
   data: {
     layout: null,
+    reduceMotion: false,
     status: 'loading',
     errorTitle: '',
     errorDesc: '',
@@ -22,7 +23,10 @@ Page({
   },
 
   onLoad() {
-    this.setData({ layout: app.globalData.layout });
+    this.setData({
+      layout: app.globalData.layout,
+      reduceMotion: app.globalData.reduceMotion
+    });
   },
 
   onShow() {

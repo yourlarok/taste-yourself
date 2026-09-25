@@ -53,9 +53,11 @@
 }
 
 .sg__consent-title {
+  font-family: var(--serif);
   color: #FFFFFF;
   font-size: var(--f-xl);
   font-weight: 600;
+  letter-spacing: 4rpx;
 }
 
 .sg__consent-desc {
@@ -311,9 +313,11 @@
 
 .sg__result-title {
   margin-top: var(--s4);
+  font-family: var(--serif);
   color: #FFFFFF;
   font-size: var(--f-l);
   font-weight: 600;
+  letter-spacing: 3rpx;
 }
 
 .sg__result-desc {

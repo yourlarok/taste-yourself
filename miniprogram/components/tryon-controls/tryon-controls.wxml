@@ -12,8 +12,11 @@
         <text class="tc__main-text">{{generatingText}}</text>
       </block>
       <block wx:else>
-        <view class="tc__shutter"></view>
-        <text class="tc__main-text">{{mainText}}</text>
+        <view class="tc__shutter"><view class="tc__shutter-dot"></view></view>
+        <view class="tc__main-col">
+          <text class="tc__main-text">{{mainText}}</text>
+          <text class="tc__main-sub">{{subText}}</text>
+        </view>
       </block>
     </view>
 
@@ -21,7 +24,6 @@
 
     <view class="tc__sub">
       <view class="tc__subbtn" bindtap="onOpenFit" hover-class="tap-dim">尺码差异</view>
-      <view class="tc__divider"></view>
       <view class="tc__subbtn" bindtap="onStartRealtime" hover-class="tap-dim">动态试衣 · 15 秒</view>
     </view>
   </block>

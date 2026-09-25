@@ -59,8 +59,10 @@
 }
 
 .fs__title {
+  font-family: var(--serif);
   font-size: var(--f-l);
   font-weight: 600;
+  letter-spacing: 3rpx;
 }
 
 .fs__subtitle {
@@ -76,7 +78,10 @@
   align-items: center;
   justify-content: center;
   color: var(--ink-2);
-  font-size: 44rpx;
+}
+
+.fs__close .i-close {
+  font-size: 32rpx;
 }
 
 .fs__body {
@@ -191,8 +196,10 @@
 
 .fs-row__size {
   width: 96rpx;
+  font-family: var(--serif);
   font-size: var(--f-l);
   font-weight: 600;
+  letter-spacing: 2rpx;
 }
 
 .fs-row__tag {
@@ -213,7 +220,7 @@
 
 .fs-row__arrow {
   color: var(--ink-3);
-  font-size: 36rpx;
+  font-size: 28rpx;
   transition: transform var(--dur-fast) var(--ease);
 }
 
@@ -258,10 +265,10 @@
 .fs-track {
   position: relative;
   margin-top: var(--s1);
-  height: 12rpx;
+  height: 8rpx;
   border-radius: var(--r-full);
   background: var(--surface-warm);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .fs-track__band {
@@ -275,10 +282,12 @@
 .fs-track__dot {
   position: absolute;
   top: 50%;
-  width: 16rpx;
-  height: 16rpx;
+  width: 18rpx;
+  height: 18rpx;
   border-radius: 50%;
   background: var(--accent);
+  border: 3rpx solid var(--surface);
+  box-shadow: 0 2rpx 8rpx rgba(33, 27, 20, 0.18);
   transform: translate(-50%, -50%);
 }
 

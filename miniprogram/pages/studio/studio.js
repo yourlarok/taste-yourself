@@ -38,6 +38,7 @@ function statusLineOf(phase) {
 Page({
   data: {
     layout: null,
+    reduceMotion: false,
     // studio
     phase: 'preparing',
     statusLine: '正在准备…',
@@ -55,6 +56,7 @@ Page({
     uploadError: '',             // '' | 'failed' | 'rejected'
     generatingText: '正在生成…',
     resultImage: '',
+    resultTimeText: '',
     quotaUsed: false,
     quotaHint: '',
     generateDisabled: true,
@@ -74,7 +76,10 @@ Page({
     processingStep: 0,
     // realtime
     realtimeState: 'idle',
-    countdown: REALTIME_SECONDS
+    countdown: REALTIME_SECONDS,
+    realtimePublishUrl: '',
+    realtimePlayUrl: '',
+    realtimeHasStream: false
   },
 
   patch(obj) {
@@ -88,7 +93,10 @@ Page({
     this._pendingAdd = !!(options && options.add === '1');
     this._scanId = '';
     this._rtTimer = null;
-    this.setData({ layout: app.globalData.layout });
+    this.setData({
+      layout: app.globalData.layout,
+      reduceMotion: app.globalData.reduceMotion
+    });
     this.init();
   },
 
@@ -311,6 +319,7 @@ Page({
           phase: 'result',
           statusLine: statusLineOf('result'),
           resultImage: r.result_image,
+          resultTimeText: '刚刚',
           quotaUsed: false,
           quotaHint: ''
         });
@@ -611,11 +620,28 @@ Page({
 
   connectRealtime() {
     this.hideBanner();
-    this.setData({ realtimeState: 'connecting', countdown: REALTIME_SECONDS });
+    this.setData({
+      realtimeState: 'connecting',
+      countdown: REALTIME_SECONDS,
+      realtimePublishUrl: '',
+      realtimePlayUrl: '',
+      realtimeHasStream: false
+    });
     api.startRealtime(this.data.sessionId)
       .then((r) => {
+        if (r && r.status === 'unavailable') {
+          throw new api.ApiError(503, r.notice || '动态试衣服务暂不可用', 'REALTIME_UNAVAILABLE');
+        }
         const total = (r && r.duration) || REALTIME_SECONDS;
-        this.setData({ realtimeState: 'active', countdown: total });
+        const publishUrl = (r && r.publish_url) || '';
+        const playUrl = (r && r.play_url) || '';
+        this.setData({
+          realtimeState: 'active',
+          countdown: Math.min(total, REALTIME_SECONDS),
+          realtimePublishUrl: publishUrl,
+          realtimePlayUrl: playUrl,
+          realtimeHasStream: !!(publishUrl && playUrl)
+        });
         this.clearRtTimer();
         this._rtTimer = setInterval(() => {
           const left = this.data.countdown - 1;
@@ -631,6 +657,23 @@ Page({
         this.setData({ realtimeState: 'idle' });
         this.showBanner(err, 'realtime');
       });
+  },
+
+  onRealtimeMediaError(e) {
+    if (this.data.realtimeState !== 'active' && this.data.realtimeState !== 'connecting') return;
+    const detail = e && e.detail ? e.detail : {};
+    this.clearRtTimer();
+    this.setData({
+      realtimeState: 'idle',
+      countdown: REALTIME_SECONDS,
+      realtimePublishUrl: '',
+      realtimePlayUrl: '',
+      realtimeHasStream: false
+    });
+    this.showBanner(
+      new api.ApiError(503, detail.errMsg || '动态画面连接中断', 'REALTIME_MEDIA_ERROR'),
+      'realtime'
+    );
   },
 
   onEndRealtime() {
@@ -651,6 +694,9 @@ Page({
         this.setData({
           realtimeState: 'idle',
           countdown: REALTIME_SECONDS,
+          realtimePublishUrl: '',
+          realtimePlayUrl: '',
+          realtimeHasStream: false,
           statusLine: this.data.phase === 'result' ? statusLineOf('result') : statusLineOf('camera')
         });
       });

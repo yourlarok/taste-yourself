@@ -29,8 +29,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: var(--serif);
   font-size: var(--f-xs);
-  font-weight: 600;
+  border: 1rpx solid currentColor;
 }
 
 .sf--block .sf__icon {
@@ -45,9 +46,9 @@
   margin-top: 4rpx;
 }
 
-.sf--info .sf__icon { background: var(--surface-warm); color: var(--ink-2); }
-.sf--warn .sf__icon { background: var(--accent-soft); color: var(--accent-deep); }
-.sf--error .sf__icon { background: var(--accent-soft); color: var(--accent-deep); }
+.sf--info .sf__icon { color: var(--ink-2); }
+.sf--warn .sf__icon { color: var(--accent-deep); }
+.sf--error .sf__icon { color: var(--accent-deep); }
 
 .sf__body {
   flex: 1;
@@ -118,5 +119,8 @@
   align-items: center;
   justify-content: center;
   color: var(--ink-3);
-  font-size: 36rpx;
+}
+
+.sf__close .i-close {
+  font-size: 28rpx;
 }

@@ -4,6 +4,21 @@
   flex-direction: column;
 }
 
+/* ---- 入场编排：主舞台先行，内容带依次浮现 ---- */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(28rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.anim-rise {
+  animation: rise-in 420ms var(--ease) both;
+}
+
+.anim-d1 { animation-delay: 70ms; }
+.anim-d2 { animation-delay: 140ms; }
+.anim-d3 { animation-delay: 210ms; }
+.anim-d4 { animation-delay: 260ms; }
+
 /* ---- 顶部 ---- */
 .nav {
   position: relative;
@@ -19,15 +34,18 @@
 }
 
 .nav__name {
-  font-size: var(--f-m);
+  font-family: var(--serif);
+  font-size: 38rpx;
   font-weight: 600;
-  letter-spacing: 2rpx;
+  letter-spacing: 6rpx;
+  line-height: 1.2;
 }
 
 .nav__sub {
-  font-size: 18rpx;
+  margin-top: 2rpx;
+  font-size: 17rpx;
   color: var(--ink-3);
-  letter-spacing: 1rpx;
+  letter-spacing: 5rpx;
 }
 
 .nav__me {
@@ -35,15 +53,26 @@
   top: 50%;
   transform: translateY(-50%);
   min-width: 88rpx;
-  height: 56rpx;
+  height: 60rpx;
+  padding: 0 var(--s3);
   border-radius: var(--r-full);
   border: 1rpx solid var(--line-strong);
   display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  font-size: var(--f-s);
-  color: var(--ink-1);
   background: var(--surface);
+}
+
+.nav__me .i-user {
+  font-size: 30rpx;
+  color: var(--ink-2);
+}
+
+.nav__me-text {
+  margin-left: 8rpx;
+  font-size: var(--f-xs);
+  color: var(--ink-1);
+  letter-spacing: 2rpx;
 }
 
 /* ---- 加载 / 错误 ---- */
@@ -84,7 +113,7 @@
   padding: var(--s2) var(--s4) 0;
 }
 
-/* ---- 内容带 ---- */
+/* ---- 内容带：索引行 ---- */
 .band {
   margin-top: var(--s3);
   padding: 0 var(--s4);
@@ -94,28 +123,35 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  min-height: 104rpx;
+  min-height: 108rpx;
   border-top: 1rpx solid var(--line);
 }
 
-.band__row--static {
-  cursor: default;
+.band__index {
+  flex: none;
+  width: 56rpx;
+  font-family: var(--serif);
+  font-size: var(--f-xs);
+  color: var(--accent);
+  letter-spacing: 1rpx;
 }
 
 .band__label {
   flex: none;
-  width: 140rpx;
+  width: 148rpx;
   font-size: var(--f-s);
   color: var(--ink-2);
+  letter-spacing: 2rpx;
 }
 
 .band__thumb {
   flex: none;
-  width: 64rpx;
-  height: 80rpx;
-  border-radius: var(--r-s);
+  width: 60rpx;
+  height: 76rpx;
+  border-radius: 8rpx;
   margin-right: var(--s1);
   background: var(--surface-warm);
+  border: 1rpx solid var(--line);
 }
 
 .band__thumbs {
@@ -132,9 +168,16 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  text-align: right;
+  padding-right: var(--s2);
 }
 
 .band__value--dim {
+  color: var(--ink-3);
+}
+
+.band__arrow {
+  font-size: 28rpx;
   color: var(--ink-3);
 }
 
@@ -143,26 +186,35 @@
   min-height: 64rpx;
   display: flex;
   align-items: center;
-  padding-left: var(--s2);
-  font-size: var(--f-s);
+  padding-left: var(--s1);
+  font-size: var(--f-xs);
+  letter-spacing: 3rpx;
   color: var(--accent-deep);
+  border-bottom: 1rpx solid var(--accent-soft);
 }
 
-/* ---- 唯一主动作 ---- */
+/* ---- 唯一主动作：深墨填充，陶土仅作点缀 ---- */
 .cta {
   padding: var(--s2) var(--s4) 0;
 }
 
 .cta__btn {
-  height: 104rpx;
+  height: 108rpx;
   border-radius: var(--r-full);
-  background: var(--accent);
-  color: #FFFFFF;
+  background: var(--ink-1);
+  color: #F7F3EC;
   font-size: var(--f-m);
   font-weight: 600;
-  letter-spacing: 2rpx;
+  letter-spacing: 6rpx;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow-2);
+}
+
+.cta__arrow {
+  font-size: 32rpx;
+  margin-left: var(--s2);
+  color: var(--accent-soft);
 }

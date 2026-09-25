@@ -8,5 +8,5 @@
       <view class="sf__btn" wx:if="{{secondaryText}}" bindtap="onSecondary" hover-class="tap-dim">{{secondaryText}}</view>
     </view>
   </view>
-  <view class="sf__close" wx:if="{{closable}}" bindtap="onClose" hover-class="tap-dim">×</view>
+  <view class="sf__close" wx:if="{{closable}}" bindtap="onClose" hover-class="tap-dim"><text class="i i-close"></text></view>
 </view>

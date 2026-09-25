@@ -1,12 +1,15 @@
-<view class="page" wx:if="{{layout}}" style="padding-top: {{layout.statusBarHeight}}px;">
+<view class="page {{reduceMotion ? 'reduce-motion' : ''}}" wx:if="{{layout}}" style="padding-top: {{layout.statusBarHeight}}px;">
 
-  <!-- 顶部：产品名 + “我的”（右侧留白避开胶囊） -->
+  <!-- 顶部：衬线品牌名 + “我的”（右侧留白避开胶囊） -->
   <view class="nav" style="height: {{layout.navContentHeight}}px;">
     <view class="nav__brand">
       <text class="nav__name">试衣空间</text>
-      <text class="nav__sub">Taste Yourself</text>
+      <text class="nav__sub">TASTE YOURSELF</text>
     </view>
-    <view class="nav__me" style="right: {{layout.capsuleRightGap}}px;" bindtap="goProfile" hover-class="tap-dim">我的</view>
+    <view class="nav__me" style="right: {{layout.capsuleRightGap}}px;" bindtap="goProfile" hover-class="tap-dim">
+      <text class="i i-user"></text>
+      <text class="nav__me-text">我的</text>
+    </view>
   </view>
 
   <!-- 加载骨架 -->
@@ -30,7 +33,7 @@
 
   <block wx:else>
     <!-- 主舞台：整块可点 -->
-    <view class="stage-wrap">
+    <view class="stage-wrap anim-rise">
       <mirror-stage
         mode="{{status === 'ready' ? 'recent' : 'empty'}}"
         garment-name="{{recent.garmentName}}"
@@ -44,32 +47,39 @@
       />
     </view>
 
-    <!-- 上下文内容带：紧凑行，不堆卡片 -->
+    <!-- 上下文内容带：编辑式索引行 -->
     <view class="band">
-      <view class="band__row" bindtap="enterStudio" hover-class="tap-dim">
+      <view class="band__row anim-rise anim-d1" bindtap="enterStudio" hover-class="tap-dim">
+        <text class="band__index">01</text>
         <text class="band__label">上次试穿</text>
         <image wx:if="{{status === 'ready'}}" class="band__thumb" src="{{recent.resultImage}}" mode="aspectFill"></image>
         <text class="band__value {{status !== 'ready' ? 'band__value--dim' : ''}}">{{lastTryonText}}</text>
+        <text class="i i-arrow band__arrow"></text>
       </view>
 
-      <view class="band__row" bindtap="enterStudio" hover-class="tap-dim">
+      <view class="band__row anim-rise anim-d2" bindtap="enterStudio" hover-class="tap-dim">
+        <text class="band__index">02</text>
         <text class="band__label">我的衣橱</text>
         <view class="band__thumbs">
           <image wx:for="{{wardrobeThumbs}}" wx:key="id" class="band__thumb" src="{{item.image}}" mode="aspectFill"></image>
         </view>
         <text class="band__value">共 {{wardrobeCount}} 件</text>
-        <text class="band__add" catchtap="onAddGarment">添加衣服</text>
+        <text class="band__add" catchtap="onAddGarment">添加</text>
       </view>
 
-      <view class="band__row band__row--static">
+      <view class="band__row band__row--static anim-rise anim-d3">
+        <text class="band__index">03</text>
         <text class="band__label">尺寸画像</text>
         <text class="band__value band__value--dim">{{profileLine}}</text>
       </view>
     </view>
 
     <!-- 唯一主动作 -->
-    <view class="cta" style="padding-bottom: {{layout.safeBottom + 12}}px;">
-      <view class="cta__btn" bindtap="enterStudio" hover-class="btn-press">{{ctaText}}</view>
+    <view class="cta anim-rise anim-d4" style="padding-bottom: {{layout.safeBottom + 12}}px;">
+      <view class="cta__btn" bindtap="enterStudio" hover-class="btn-press">
+        <text>{{ctaText}}</text>
+        <text class="i i-arrow cta__arrow"></text>
+      </view>
     </view>
   </block>
 </view>
