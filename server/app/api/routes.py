@@ -25,6 +25,7 @@ from app.catalog import (
     get_garment,
 )
 from app.domain.auth import AuthResponse, DeleteMyDataRequest, WechatLoginRequest
+from app.domain.capabilities import CapabilityItem, CapabilitySnapshot
 from app.domain.experience import (
     BodyScanCreate,
     BodyScanFrame,
@@ -62,6 +63,38 @@ from app.services.privacy import PrivacyService
 
 router = APIRouter(prefix="/api/v1")
 analyzer = FitAnalyzer()
+
+
+def _provider_capability(
+    key: str,
+    label: str,
+    provider: str,
+    ready_notice: str,
+    demo_notice: str,
+) -> CapabilityItem:
+    if provider in {"disabled", "unavailable"}:
+        return CapabilityItem(
+            key=key,
+            label=label,
+            state="unavailable",
+            provider=provider,
+            notice="当前环境尚未配置这项能力。",
+        )
+    if provider.startswith("mock"):
+        return CapabilityItem(
+            key=key,
+            label=label,
+            state="demo",
+            provider=provider,
+            notice=demo_notice,
+        )
+    return CapabilityItem(
+        key=key,
+        label=label,
+        state="configured",
+        provider=provider,
+        notice=ready_notice,
+    )
 
 
 def get_feedback_repository(request: Request) -> FeedbackRepository:
@@ -159,6 +192,64 @@ def require_safe_image(
     if not allowed:
         storage.delete(relative_path)
         raise HTTPException(status_code=422, detail="content_rejected")
+
+
+@router.get("/capabilities", response_model=CapabilitySnapshot)
+def get_capabilities(request: Request) -> CapabilitySnapshot:
+    """Expose runtime readiness without leaking credentials or provider endpoints."""
+    tryon = _provider_capability(
+        "static_tryon",
+        "试穿照",
+        request.app.state.tryon_provider.name,
+        "真实生成 Provider 已配置；健康状态与结果质量仍需真机样本验收。",
+        "当前返回演示结果，未调用真实换装模型。",
+    )
+    measurement = _provider_capability(
+        "body_measurement",
+        "尺寸画像",
+        request.app.state.body_scan_provider.name,
+        "测量 Provider 已配置；精度与误差范围仍需软尺对照验收。",
+        "当前使用固定测试画像，不依据照片推断真实尺寸。",
+    )
+    realtime = _provider_capability(
+        "realtime_tryon",
+        "动态试衣",
+        request.app.state.realtime_provider.name,
+        "实时中继 Provider 已配置；仍需微信类目权限与真机网络验收。",
+        "当前只验证 15 秒交互与降级流程，不生成实时换装画面。",
+    )
+    sizing_state = "demo" if measurement.state == "demo" else "partial"
+    sizing = CapabilityItem(
+        key="size_analysis",
+        label="尺码差异",
+        state=sizing_state,
+        provider="fit-engine-v1",
+        notice=(
+            "当前只验证示例商品尺码表；用户衣橱尚未接入商品 SKU 尺寸数据。"
+            if sizing_state == "demo"
+            else "人体尺寸 Provider 已配置；仍需精度验收并导入逐 SKU 成衣尺寸。"
+        ),
+    )
+    items = [
+        CapabilityItem(
+            key="wardrobe",
+            label="我的衣橱",
+            state="ready",
+            provider="private-media-storage",
+            notice="图片上传、私有保存、签名读取和账号删除链路已实现。",
+        ),
+        tryon,
+        sizing,
+        measurement,
+        realtime,
+    ]
+    states = {item.state for item in items}
+    mode = "demo" if "demo" in states else "live" if states == {"ready"} else "mixed"
+    return CapabilitySnapshot(
+        environment=request.app.state.app_env,
+        mode=mode,
+        items=items,
+    )
 
 
 @router.post("/auth/dev-login", response_model=AuthResponse)

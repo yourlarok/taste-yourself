@@ -56,3 +56,25 @@ def test_fit_analysis_endpoint(tmp_path: Path, monkeypatch):
     assert "recommended_size" not in body
     assert "confidence" not in body
     assert body["variants"][0]["assessment"] == "within_reference"
+
+
+def test_capabilities_report_runtime_provider_state(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("TRYON_PROVIDER", "mock")
+    monkeypatch.setenv("BODY_SCAN_PROVIDER", "mock")
+    monkeypatch.setenv("REALTIME_PROVIDER", "disabled")
+
+    with TestClient(app) as client:
+        response = client.get("/api/v1/capabilities")
+
+    assert response.status_code == 200
+    body = response.json()
+    states = {item["key"]: item["state"] for item in body["items"]}
+    assert body["mode"] == "demo"
+    assert states == {
+        "wardrobe": "ready",
+        "static_tryon": "demo",
+        "size_analysis": "demo",
+        "body_measurement": "demo",
+        "realtime_tryon": "unavailable",
+    }

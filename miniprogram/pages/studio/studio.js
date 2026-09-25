@@ -55,7 +55,15 @@ Page({
     uploadPercent: 0,
     uploadError: '',             // '' | 'failed' | 'rejected'
     generatingText: '正在生成…',
+    tryonProgressSteps: [
+      { key: 'capture', label: '定格画面' },
+      { key: 'upload', label: '上传素材' },
+      { key: 'generate', label: '生成试穿照' }
+    ],
+    tryonProgressIndex: 0,
+    tryonProgressText: '请保持画面稳定',
     resultImage: '',
+    resultKindText: 'AI 生成效果，仅供视觉体验',
     resultTimeText: '',
     quotaUsed: false,
     quotaHint: '',
@@ -302,16 +310,31 @@ Page({
     this.hideBanner();
 
     // 1) 取景（相机不可用 / 演示模式下跳过，由后端或演示层处理）
-    this.patch({ phase: 'capturing', statusLine: statusLineOf('capturing'), generatingText: '上传画面…' });
+    this.patch({
+      phase: 'capturing',
+      statusLine: statusLineOf('capturing'),
+      generatingText: '上传画面…',
+      tryonProgressIndex: 0,
+      tryonProgressText: '正在定格当前画面'
+    });
     this.takePersonPhoto()
       .then((photoPath) => {
         // 2) 上传本人画面
-        this.patch({ phase: 'generating', statusLine: statusLineOf('generating') });
+        this.patch({
+          phase: 'generating',
+          statusLine: statusLineOf('generating'),
+          tryonProgressIndex: 1,
+          tryonProgressText: '正在安全上传本人画面'
+        });
         return api.uploadPersonImage(photoPath);
       })
       .then((person) => {
         // 3) 生成试穿照
-        this.setData({ generatingText: '正在生成试穿照…' });
+        this.setData({
+          generatingText: '正在生成试穿照…',
+          tryonProgressIndex: 2,
+          tryonProgressText: '模型正在合成衣物与画面'
+        });
         return api.staticTryon(d.sessionId, d.selectedGarmentId, person && person.id);
       })
       .then((r) => {
@@ -319,6 +342,9 @@ Page({
           phase: 'result',
           statusLine: statusLineOf('result'),
           resultImage: r.result_image,
+          resultKindText: r.provider === 'mock'
+            ? '演示画面 · 未调用真实生成模型'
+            : 'AI 生成效果，仅供视觉体验',
           resultTimeText: '刚刚',
           quotaUsed: false,
           quotaHint: ''

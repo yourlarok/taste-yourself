@@ -1,0 +1,18 @@
+<view class="task-progress">
+  <text class="task-progress__eyebrow">正在完成本次试穿</text>
+  <text class="task-progress__detail">{{detail}}</text>
+  <view class="task-progress__steps">
+    <view
+      wx:for="{{viewSteps}}"
+      wx:key="key"
+      class="task-progress__step task-progress__step--{{item.state}}"
+    >
+      <view class="task-progress__mark">
+        <text wx:if="{{item.state !== 'done'}}">{{item.indexText}}</text>
+        <text wx:else class="task-progress__check">✓</text>
+      </view>
+      <text class="task-progress__label">{{item.label}}</text>
+    </view>
+  </view>
+  <text class="task-progress__note">离开页面会终止本次生成</text>
+</view>

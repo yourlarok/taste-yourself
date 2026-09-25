@@ -240,6 +240,9 @@ const api = {
         static_used: r.static.used, static_limit: r.static.limit,
         realtime_used: r.realtime.used, realtime_limit: r.realtime.limit
       })),
+  getCapabilities: () => useMock()
+    ? mock.getCapabilities()
+    : request('GET', '/api/v1/capabilities'),
   getFitProfile: () => useMock()
     ? mock.getFitProfile()
     : request('GET', '/api/v1/me/fit-profile').then((r) => Object.assign({}, r, {
@@ -266,9 +269,18 @@ const api = {
     ? mock.staticTryon(sessionId, garmentId)
     : request('POST', '/api/v1/experience-sessions/' + sessionId + '/static-tryon', {
         person_image_id: personImageId || null
-      }).then((r) => Object.assign({}, r, {
-        result_image: absoluteMediaUrl(r.result_image || r.result_url)
-      })),
+      }).then((r) => {
+        if (r.status !== 'completed') {
+          throw new ApiError(503, r.notice || '试穿照生成失败', 'TRYON_FAILED');
+        }
+        return Object.assign({}, r, {
+          result_image: r.result_url
+            ? absoluteMediaUrl(r.result_url)
+            : r.provider === 'mock'
+              ? '/assets/demo/tryon-result.jpg'
+              : ''
+        });
+      }),
 
   getFitAnalysis: (garmentId) => useMock()
     ? mock.getFitAnalysis(garmentId)

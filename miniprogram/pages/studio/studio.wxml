@@ -70,10 +70,11 @@
 
   <!-- 生成中遮罩：阻断重复提交 -->
   <view wx:if="{{phase === 'capturing' || phase === 'generating'}}" class="genmask">
-    <view class="genmask__box">
-      <view class="spinner spinner--light"></view>
-      <text class="genmask__text">{{generatingText}}</text>
-    </view>
+    <task-progress
+      steps="{{tryonProgressSteps}}"
+      current="{{tryonProgressIndex}}"
+      detail="{{tryonProgressText}}"
+    />
   </view>
 
   <!-- 降级 / 错误横幅：不长期占据大面积 -->
@@ -98,7 +99,7 @@
 
   <!-- 结果签名版：编辑式说明牌，含 AI 生成提示 -->
   <view wx:if="{{phase === 'result' && realtimeState === 'idle'}}" class="plate" style="bottom: {{layout.safeBottom + 312}}px;">
-    <text class="plate__eyebrow">试穿照 · AI 生成效果，仅供视觉体验</text>
+    <text class="plate__eyebrow">试穿照 · {{resultKindText}}</text>
     <text class="plate__title">{{selectedGarmentName}}</text>
     <text class="plate__meta">{{resultTimeText}} · 点击画面返回相机</text>
   </view>

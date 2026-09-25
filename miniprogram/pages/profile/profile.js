@@ -15,6 +15,8 @@ Page({
     profileExists: false,
     profileLine: '未建立',
     profileCreatedText: '',
+    capabilityModeText: '',
+    capabilities: [],
     privacyOpen: false,
     deleting: false
   },
@@ -32,13 +34,22 @@ Page({
     this.setData({ status: 'loading' });
     Promise.all([
       api.getUsageInfo(),
+      api.getCapabilities(),
       api.getFitProfile().catch((err) => {
         if (err && err.status === 404) return null;
         throw err;
       })
     ]).then((results) => {
       const usage = results[0];
-      const profile = results[1];
+      const capabilitySnapshot = results[1];
+      const profile = results[2];
+      const stateText = {
+        ready: '真实可用',
+        configured: '已配置待验收',
+        demo: '演示模式',
+        partial: '部分可用',
+        unavailable: '尚未配置'
+      };
       this.setData({
         status: 'ready',
         usage,
@@ -46,7 +57,19 @@ Page({
         profileLine: profile ? '已建立' : '未建立',
         profileCreatedText: profile
           ? '建立于 ' + format.relativeTime(profile.created_at) + ' · 原始扫描帧已删除'
-          : '比较尺码时可在镜前的“尺码差异”中创建'
+          : '比较尺码时可在镜前的“尺码差异”中创建',
+        capabilityModeText: capabilitySnapshot.mode === 'live'
+          ? '当前环境已连接真实服务'
+          : capabilitySnapshot.mode === 'mixed'
+            ? '当前环境部分能力尚待接通'
+            : '当前为演示环境，不代表真实能力已开通',
+        capabilities: (capabilitySnapshot.items || []).map((item) => ({
+          key: item.key,
+          label: item.label,
+          state: item.state,
+          stateText: stateText[item.state] || item.state,
+          notice: item.notice
+        }))
       });
     }).catch((err) => {
       const info = api.explainError(err, 'profile');

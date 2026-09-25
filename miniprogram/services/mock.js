@@ -203,6 +203,20 @@ function getUsageInfo() {
   });
 }
 
+function getCapabilities() {
+  return delay(180).then(() => ({
+    environment: 'development',
+    mode: 'demo',
+    items: [
+      { key: 'wardrobe', label: '我的衣橱', state: 'demo', provider: 'local-demo', notice: '当前衣服只保存在本机演示数据中；切换真实后端后使用私有媒体存储。' },
+      { key: 'static_tryon', label: '试穿照', state: 'demo', provider: 'mock', notice: '当前展示预置演示结果，未调用真实换装模型。' },
+      { key: 'size_analysis', label: '尺码差异', state: 'demo', provider: 'fit-engine-v1', notice: '当前使用示例商品尺码表和固定测试画像。' },
+      { key: 'body_measurement', label: '尺寸画像', state: 'demo', provider: 'mock', notice: '当前不依据照片推断真实尺寸。' },
+      { key: 'realtime_tryon', label: '动态试衣', state: 'demo', provider: 'mock', notice: '当前只运行 15 秒交互演示，不生成实时换装流。' }
+    ]
+  }));
+}
+
 function getFitProfile() {
   return delay().then(() => {
     guardNetwork();
@@ -275,7 +289,12 @@ function staticTryon(sessionId, garmentId) {
       updated_at: Date.now()
     };
     write(K.recent, recent);
-    return { result_image: RESULT_IMAGE, session_id: sessionId };
+    return {
+      result_image: RESULT_IMAGE,
+      session_id: sessionId,
+      provider: 'mock',
+      notice: '演示画面，未调用真实换装模型'
+    };
   });
 }
 
@@ -370,6 +389,7 @@ module.exports = {
   uploadWardrobeGarment,
   getRecentExperience,
   getUsageInfo,
+  getCapabilities,
   getFitProfile,
   deleteFitProfile,
   deleteAllData,

@@ -35,6 +35,22 @@
 
   <scroll-view wx:else class="body" scroll-y>
 
+    <!-- 当前环境的真实能力状态：不以 Mock 代替上线完成度 -->
+    <view class="section">
+      <text class="section__title">当前能力</text>
+      <text class="section__intro">{{capabilityModeText}}</text>
+      <view class="capability" wx:for="{{capabilities}}" wx:key="key">
+        <view class="capability__head">
+          <text class="capability__label">{{item.label}}</text>
+          <view class="capability__state capability__state--{{item.state}}">
+            <view class="capability__dot"></view>
+            <text>{{item.stateText}}</text>
+          </view>
+        </view>
+        <text class="capability__notice">{{item.notice}}</text>
+      </view>
+    </view>
+
     <!-- 今日用量 -->
     <view class="section">
       <text class="section__title">今日用量</text>

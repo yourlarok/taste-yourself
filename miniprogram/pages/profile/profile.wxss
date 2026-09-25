@@ -69,6 +69,65 @@
   font-weight: 400;
 }
 
+.section__intro {
+  display: block;
+  margin-top: var(--s2);
+  font-family: var(--serif);
+  font-size: var(--f-m);
+  color: var(--ink-1);
+  line-height: 1.55;
+}
+
+.capability {
+  padding: var(--s3) 0;
+  border-top: 1rpx solid var(--line);
+}
+
+.capability:first-of-type {
+  margin-top: var(--s2);
+}
+
+.capability__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.capability__label {
+  font-size: var(--f-s);
+  color: var(--ink-1);
+}
+
+.capability__state {
+  display: flex;
+  align-items: center;
+  font-size: 20rpx;
+  letter-spacing: 2rpx;
+  color: var(--ink-2);
+}
+
+.capability__dot {
+  width: 10rpx;
+  height: 10rpx;
+  margin-right: 10rpx;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+
+.capability__state--ready .capability__dot { background: #65735C; }
+.capability__state--configured .capability__dot { background: #70819A; }
+.capability__state--demo .capability__dot { background: var(--accent); }
+.capability__state--partial .capability__dot { background: #9A8258; }
+.capability__state--unavailable .capability__dot { background: var(--danger); }
+
+.capability__notice {
+  display: block;
+  margin-top: 8rpx;
+  font-size: var(--f-xs);
+  color: var(--ink-3);
+  line-height: 1.65;
+}
+
 .row {
   display: flex;
   flex-direction: row;
