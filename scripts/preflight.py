@@ -39,7 +39,6 @@ def main() -> int:
         "WECHAT_APP_ID",
         "WECHAT_APP_SECRET",
         "PUBLIC_DOMAIN",
-        "FASHN_WORKER_TOKEN",
     ]
     for name in required:
         if not os.getenv(name):
@@ -51,8 +50,16 @@ def main() -> int:
         failures.append("AUTH_TOKEN_SECRET 必须至少 32 个字符")
     if os.getenv("AUTH_TOKEN_SECRET", "").startswith("replace-"):
         failures.append("AUTH_TOKEN_SECRET 仍是示例值")
-    if os.getenv("TRYON_PROVIDER") != "fashn-http":
-        failures.append("TRYON_PROVIDER 必须为 fashn-http")
+    tryon_provider = os.getenv("TRYON_PROVIDER")
+    if tryon_provider not in {"fashn-http", "fashn-api"}:
+        failures.append("TRYON_PROVIDER 必须为 fashn-api 或 fashn-http")
+    elif tryon_provider == "fashn-api" and not os.getenv("FASHN_API_KEY"):
+        failures.append("缺少环境变量 FASHN_API_KEY")
+    elif tryon_provider == "fashn-http":
+        if not os.getenv("FASHN_WORKER_URL"):
+            failures.append("缺少环境变量 FASHN_WORKER_URL")
+        if not os.getenv("FASHN_WORKER_TOKEN"):
+            failures.append("缺少环境变量 FASHN_WORKER_TOKEN")
     if os.getenv("REALTIME_PROVIDER") != "http":
         failures.append("REALTIME_PROVIDER 必须为 http")
     if not os.getenv("REALTIME_SESSION_URL"):

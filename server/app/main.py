@@ -15,7 +15,7 @@ from app.providers.realtime import (
     HttpRealtimeProvider,
     MockRealtimeProvider,
 )
-from app.providers.tryon import FashnHttpTryOnProvider, MockTryOnProvider
+from app.providers.tryon import FashnApiTryOnProvider, FashnHttpTryOnProvider, MockTryOnProvider
 from app.repositories.body_scans import BodyScanRepository
 from app.repositories.experience import ExperienceRepository
 from app.repositories.feedback import FeedbackRepository
@@ -36,7 +36,6 @@ def validate_production_environment(app_env: str) -> None:
     required_values = {
         "WECHAT_APP_ID": os.getenv("WECHAT_APP_ID", ""),
         "WECHAT_APP_SECRET": os.getenv("WECHAT_APP_SECRET", ""),
-        "FASHN_WORKER_URL": os.getenv("FASHN_WORKER_URL", ""),
         "REALTIME_SESSION_URL": os.getenv("REALTIME_SESSION_URL", ""),
         "BODY_SCAN_WORKER_URL": os.getenv("BODY_SCAN_WORKER_URL", ""),
         "CONTENT_SAFETY_URL": os.getenv("CONTENT_SAFETY_URL", ""),
@@ -44,8 +43,14 @@ def validate_production_environment(app_env: str) -> None:
     missing = [name for name, value in required_values.items() if not value]
     if missing:
         raise RuntimeError("Missing production configuration: " + ", ".join(missing))
+    tryon_provider = os.getenv("TRYON_PROVIDER", "")
+    if tryon_provider not in {"fashn-http", "fashn-api"}:
+        raise RuntimeError("Production forbids mock or disabled providers: TRYON_PROVIDER")
+    if tryon_provider == "fashn-http" and not os.getenv("FASHN_WORKER_URL"):
+        raise RuntimeError("Missing production configuration: FASHN_WORKER_URL")
+    if tryon_provider == "fashn-api" and not os.getenv("FASHN_API_KEY"):
+        raise RuntimeError("Missing production configuration: FASHN_API_KEY")
     selections = {
-        "TRYON_PROVIDER": (os.getenv("TRYON_PROVIDER", ""), "fashn-http"),
         "REALTIME_PROVIDER": (os.getenv("REALTIME_PROVIDER", ""), "http"),
         "BODY_SCAN_PROVIDER": (os.getenv("BODY_SCAN_PROVIDER", ""), "http"),
         "CONTENT_SAFETY_PROVIDER": (os.getenv("CONTENT_SAFETY_PROVIDER", ""), "http"),
@@ -127,6 +132,15 @@ async def lifespan(app: FastAPI):
         app.state.tryon_provider = FashnHttpTryOnProvider(
             base_url=worker_url,
             token=os.getenv("FASHN_WORKER_TOKEN", ""),
+            storage=storage,
+        )
+    elif provider_name == "fashn-api":
+        api_key = os.getenv("FASHN_API_KEY")
+        if not api_key:
+            raise RuntimeError("FASHN_API_KEY is required for TRYON_PROVIDER=fashn-api")
+        app.state.tryon_provider = FashnApiTryOnProvider(
+            api_key=api_key,
+            base_url=os.getenv("FASHN_API_BASE_URL", "https://api.fashn.ai/v1"),
             storage=storage,
         )
     else:

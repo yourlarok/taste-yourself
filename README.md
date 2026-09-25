@@ -91,6 +91,8 @@ pytest
 
 静态试穿是默认模式。衣服图片先完成主体提取、背景清理、品类识别与质量检查，再提交给可替换的虚拟试穿 Provider。它成本较低、容易比较，也是实时服务失败时的稳定回落状态。
 
+首轮内测优先使用 FASHN 托管 API：服务端设置 `TRYON_PROVIDER=fashn-api` 与 `FASHN_API_KEY`，生成结果会回存到本项目的私有媒体目录，小程序不接触供应商密钥。Windows + NVIDIA 本机备用方案可运行 `scripts/setup-fashn-windows.ps1` 创建 D 盘隔离环境，再运行 `scripts/start-fashn-worker.ps1`；后续可在效果验收不下降的前提下切回自托管来降低成本。
+
 ### 实时试穿
 
 实时能力通过 Provider 抽象接入 WebRTC/API。小程序原生环境需要验证 `live-pusher` / `live-player` 类目权限，并可能通过流媒体中转服务连接模型供应商。
