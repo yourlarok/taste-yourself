@@ -40,11 +40,16 @@ from app.domain.experience import (
     StaticTryOnResult,
 )
 from app.domain.models import (
+    BodyMeasurements,
     FitAnalysisRequest,
     FitAnalysisResponse,
     FitFeedback,
+    FitPreference,
+    GarmentCategory,
+    ProductFitData,
+    UserFitProfile,
 )
-from app.domain.wardrobe import GarmentRecord, PersonImageRecord
+from app.domain.wardrobe import GarmentRecord, GarmentSizeChartInput, PersonImageRecord
 from app.providers.body_scan import BodyScanProvider
 from app.providers.content_safety import ContentSafetyProvider
 from app.providers.realtime import RealtimeProvider
@@ -225,9 +230,9 @@ def get_capabilities(request: Request) -> CapabilitySnapshot:
         state=sizing_state,
         provider="fit-engine-v1",
         notice=(
-            "当前只验证示例商品尺码表；用户衣橱尚未接入商品 SKU 尺寸数据。"
+            "当前使用固定测试画像；用户衣橱支持录入逐 SKU 成衣尺寸表。"
             if sizing_state == "demo"
-            else "人体尺寸 Provider 已配置；仍需精度验收并导入逐 SKU 成衣尺寸。"
+            else "人体尺寸 Provider 已配置；用户衣橱可录入逐 SKU 成衣尺寸，仍需精度验收。"
         ),
     )
     items = [
@@ -493,20 +498,38 @@ def analyze_demo_garment(garment_id: str) -> FitAnalysisResponse:
 
 
 @router.get("/catalog/garments/{garment_id}/fit-analysis", response_model=FitAnalysisResponse)
+@router.get("/garments/{garment_id}/fit-analysis", response_model=FitAnalysisResponse)
 def analyze_garment_for_current_user(
     garment_id: str,
     profiles: FitProfileRepository = Depends(get_fit_profile_repository),
+    wardrobe: WardrobeRepository = Depends(get_wardrobe_repository),
     current_user: str = Depends(get_current_user),
 ) -> FitAnalysisResponse:
-    require_garment(garment_id)
+    require_garment(garment_id, wardrobe)
     profile = profiles.get(current_user)
     if profile is None:
         raise HTTPException(status_code=409, detail="fit_profile_required")
-    request = fit_request_for_measurements(
-        garment_id,
-        current_user,
-        profile["measurements_cm"],
-    )
+    uploaded = wardrobe.get_garment(garment_id)
+    if uploaded is not None:
+        if uploaded.user_id != current_user:
+            raise HTTPException(status_code=404, detail="garment_not_found")
+        product = wardrobe.get_size_chart(garment_id, current_user)
+        if product is None:
+            raise HTTPException(status_code=404, detail="product_size_chart_not_found")
+        request = FitAnalysisRequest(
+            profile=UserFitProfile(
+                user_id=current_user,
+                preference=FitPreference.REGULAR,
+                measurements=BodyMeasurements.model_validate(profile["measurements_cm"]),
+            ),
+            product=product,
+        )
+    else:
+        request = fit_request_for_measurements(
+            garment_id,
+            current_user,
+            profile["measurements_cm"],
+        )
     return analyzer.analyze(request).model_copy(
         update={
             "profile_source": profile["provider"],
@@ -514,6 +537,52 @@ def analyze_garment_for_current_user(
             "profile_updated_at": profile["updated_at"],
         }
     )
+
+
+@router.put(
+    "/wardrobe/garments/{garment_id}/size-chart",
+    response_model=ProductFitData,
+)
+def save_wardrobe_size_chart(
+    garment_id: str,
+    payload: GarmentSizeChartInput,
+    repository: WardrobeRepository = Depends(get_wardrobe_repository),
+    current_user: str = Depends(get_current_user),
+) -> ProductFitData:
+    garment = repository.get_garment(garment_id)
+    if garment is None or garment.user_id != current_user:
+        raise HTTPException(status_code=404, detail="garment_not_found")
+    category = {
+        "tops": GarmentCategory.TOP,
+        "bottoms": GarmentCategory.BOTTOM,
+        "one-pieces": GarmentCategory.DRESS,
+    }[garment.category]
+    product = ProductFitData(
+        product_id=garment_id,
+        brand=payload.brand,
+        category=category,
+        stretch_percent=payload.stretch_percent,
+        variants=payload.variants,
+    )
+    return repository.save_size_chart(garment_id, current_user, product)
+
+
+@router.get(
+    "/wardrobe/garments/{garment_id}/size-chart",
+    response_model=ProductFitData,
+)
+def get_wardrobe_size_chart(
+    garment_id: str,
+    repository: WardrobeRepository = Depends(get_wardrobe_repository),
+    current_user: str = Depends(get_current_user),
+) -> ProductFitData:
+    garment = repository.get_garment(garment_id)
+    if garment is None or garment.user_id != current_user:
+        raise HTTPException(status_code=404, detail="garment_not_found")
+    product = repository.get_size_chart(garment_id, current_user)
+    if product is None:
+        raise HTTPException(status_code=404, detail="product_size_chart_not_found")
+    return product
 
 
 @router.delete("/me/fit-profile")

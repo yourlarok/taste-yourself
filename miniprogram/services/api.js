@@ -223,10 +223,10 @@ const api = {
   listWardrobeGarments: () => useMock()
     ? mock.listWardrobeGarments()
     : request('GET', '/api/v1/wardrobe/garments').then((r) => normalizeGarmentList(r, 'wardrobe')),
-  uploadWardrobeGarment: (filePath, onProgress) => useMock()
-    ? mock.uploadWardrobeGarment(filePath, onProgress)
+  uploadWardrobeGarment: (filePath, category, onProgress) => useMock()
+    ? mock.uploadWardrobeGarment(filePath, category, onProgress)
     : uploadFile('/api/v1/wardrobe/garments', filePath, 'image', {
-        name: '新加入的衣服', category: 'tops'
+        name: '新加入的衣服', category: category || 'tops'
       }, onProgress).then((item) => ({ garment: normalizeGarment(item, 'wardrobe') })),
 
   getRecentExperience: () => useMock()
@@ -284,7 +284,13 @@ const api = {
 
   getFitAnalysis: (garmentId) => useMock()
     ? mock.getFitAnalysis(garmentId)
-    : request('GET', '/api/v1/catalog/garments/' + garmentId + '/fit-analysis').then(normalizeFit),
+    : request('GET', '/api/v1/garments/' + garmentId + '/fit-analysis').then(normalizeFit),
+  getGarmentSizeChart: (garmentId) => useMock()
+    ? Promise.reject(new ApiError(404, '演示衣服不支持修改尺码表', 'DEMO_ONLY'))
+    : request('GET', '/api/v1/wardrobe/garments/' + garmentId + '/size-chart'),
+  saveGarmentSizeChart: (garmentId, chart) => useMock()
+    ? Promise.reject(new ApiError(409, '请切换真实后端后录入尺码表', 'DEMO_ONLY'))
+    : request('PUT', '/api/v1/wardrobe/garments/' + garmentId + '/size-chart', chart),
 
   createBodyScan: (sessionId) => useMock()
     ? mock.createBodyScan(sessionId)

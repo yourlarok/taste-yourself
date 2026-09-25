@@ -1,0 +1,38 @@
+<view class="sce-mask {{visible ? 'is-open' : ''}}" bindtap="onClose"></view>
+<view class="sce {{visible ? 'is-open' : ''}}" catchtouchmove="noop">
+  <view class="sce__head">
+    <view>
+      <text class="sce__eyebrow">成衣尺寸 · CM</text>
+      <text class="sce__title">{{garmentName || '录入尺码表'}}</text>
+    </view>
+    <view class="sce__close" bindtap="onClose"><text class="i i-close"></text></view>
+  </view>
+  <scroll-view class="sce__body" scroll-y>
+    <text class="sce__guide">照商品详情页原样填写；不知道的项目留空。围度填完整一圈，不填平铺半围。</text>
+    <view class="sce__brand">
+      <text class="sce__label">品牌（可选）</text>
+      <input class="sce__input" value="{{brand}}" placeholder="例如：品牌官方尺码表" bindinput="onBrandInput" />
+    </view>
+    <view class="sce-row" wx:for="{{rows}}" wx:key="uid">
+      <view class="sce-row__top">
+        <text>尺码 {{index + 1}}</text>
+        <text wx:if="{{rows.length > 1}}" class="sce-row__remove" data-index="{{index}}" bindtap="onRemoveRow">删除</text>
+      </view>
+      <view class="sce-grid">
+        <view class="sce-field sce-field--size">
+          <text class="sce__label">尺码名称 *</text>
+          <input class="sce__input" value="{{item.size}}" placeholder="M / 170" data-index="{{index}}" data-field="size" bindinput="onCellInput" />
+        </view>
+        <view class="sce-field" wx:for="{{metrics}}" wx:for-item="metric" wx:key="key">
+          <text class="sce__label">{{metric.label}}</text>
+          <input class="sce__input" type="digit" value="{{item[metric.key]}}" placeholder="cm" data-index="{{index}}" data-field="{{metric.key}}" bindinput="onCellInput" />
+        </view>
+      </view>
+    </view>
+    <view class="sce__add" bindtap="onAddRow">＋ 添加一个尺码</view>
+    <view class="sce__space"></view>
+  </scroll-view>
+  <view class="sce__footer">
+    <button class="sce__save" loading="{{saving}}" disabled="{{saving}}" bindtap="onSubmit">保存并分析</button>
+  </view>
+</view>

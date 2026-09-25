@@ -87,6 +87,49 @@ def test_devtools_vertical_slice(tmp_path: Path, monkeypatch):
         assert personal_analysis.json()["profile_source"] == "mock"
         assert personal_analysis.json()["variants"][0]["reasons"][0]["body_cm"] == 92.0
 
+        uploaded = client.post(
+            "/api/v1/wardrobe/garments",
+            data={"name": "用户衬衫", "category": "tops"},
+            files={"image": ("shirt.jpg", scan_frame(), "image/jpeg")},
+        )
+        assert uploaded.status_code == 201
+        uploaded_id = uploaded.json()["id"]
+
+        missing_chart = client.get(f"/api/v1/garments/{uploaded_id}/fit-analysis")
+        assert missing_chart.status_code == 404
+        assert missing_chart.json()["detail"] == "product_size_chart_not_found"
+
+        chart = client.put(
+            f"/api/v1/wardrobe/garments/{uploaded_id}/size-chart",
+            json={
+                "brand": "测试品牌",
+                "stretch_percent": 0,
+                "variants": [
+                    {
+                        "sku_id": "shirt-m",
+                        "size_label": "M",
+                        "measurements_cm": {"chest_cm": 100, "waist_cm": 96},
+                    },
+                    {
+                        "sku_id": "shirt-l",
+                        "size_label": "L",
+                        "measurements_cm": {"chest_cm": 106, "waist_cm": 102},
+                    },
+                ],
+            },
+        )
+        assert chart.status_code == 200
+        assert chart.json()["product_id"] == uploaded_id
+        assert chart.json()["category"] == "top"
+
+        uploaded_analysis = client.get(f"/api/v1/garments/{uploaded_id}/fit-analysis")
+        assert uploaded_analysis.status_code == 200
+        assert [row["size_label"] for row in uploaded_analysis.json()["variants"]] == [
+            "M",
+            "L",
+        ]
+        assert "recommended_size" not in uploaded_analysis.json()
+
         cleared = client.delete("/api/v1/me/fit-profile")
         assert cleared.json()["deleted"] == 1
         assert (

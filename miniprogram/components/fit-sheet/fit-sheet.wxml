@@ -48,6 +48,7 @@
   <!-- 商品尺码数据缺失 -->
   <view wx:elif="{{state === 'missing_product_data'}}" class="fs__body">
     <state-feedback
+      wx:if="{{!canEditSizeChart}}"
       kind="block"
       tone="info"
       title="该商品暂无尺码数据"
@@ -55,6 +56,14 @@
       action-text="知道了"
       bindaction="onClose"
     />
+    <view wx:else class="fs__explain">
+      <text class="fs__explain-title">补充这件衣服的尺码表</text>
+      <text class="fs__explain-text">需要填写商品页标注的成衣尺寸。请勿填写适合身高、体重或“建议尺码”，这些不能替代成衣数据。</text>
+      <view class="fs__explain-actions">
+        <view class="fs__btn-primary" bindtap="onEditSizeChart" hover-class="btn-press">录入尺码表</view>
+        <view class="fs__btn-plain" bindtap="onClose" hover-class="tap-dim">稍后再说</view>
+      </view>
+    </view>
   </view>
 
   <!-- 错误 -->

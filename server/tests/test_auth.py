@@ -45,6 +45,16 @@ def test_production_rejects_missing_authentication(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("MEDIA_ROOT", str(tmp_path / "media"))
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("AUTH_TOKEN_SECRET", "a-production-secret-with-at-least-32-characters")
+    monkeypatch.setenv("WECHAT_APP_ID", "test-app-id")
+    monkeypatch.setenv("WECHAT_APP_SECRET", "test-app-secret")
+    monkeypatch.setenv("TRYON_PROVIDER", "fashn-http")
+    monkeypatch.setenv("FASHN_WORKER_URL", "http://worker.test")
+    monkeypatch.setenv("REALTIME_PROVIDER", "http")
+    monkeypatch.setenv("REALTIME_SESSION_URL", "http://realtime.test/session")
+    monkeypatch.setenv("BODY_SCAN_PROVIDER", "http")
+    monkeypatch.setenv("BODY_SCAN_WORKER_URL", "http://measurement.test")
+    monkeypatch.setenv("CONTENT_SAFETY_PROVIDER", "http")
+    monkeypatch.setenv("CONTENT_SAFETY_URL", "http://safety.test")
 
     with TestClient(app) as client:
         response = client.post(

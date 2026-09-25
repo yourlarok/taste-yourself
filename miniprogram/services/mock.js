@@ -160,7 +160,7 @@ function listWardrobeGarments() {
   });
 }
 
-function uploadWardrobeGarment(filePath, onProgress) {
+function uploadWardrobeGarment(filePath, category, onProgress) {
   if (onProgress) {
     let p = 0;
     const timer = setInterval(() => {
@@ -179,6 +179,7 @@ function uploadWardrobeGarment(filePath, onProgress) {
       id: 'w-' + Date.now(),
       name: '新上传的衣服',
       image_url: filePath,
+      category: category || 'tops',
       source: 'wardrobe'
     };
     list.push(item);
@@ -210,7 +211,7 @@ function getCapabilities() {
     items: [
       { key: 'wardrobe', label: '我的衣橱', state: 'demo', provider: 'local-demo', notice: '当前衣服只保存在本机演示数据中；切换真实后端后使用私有媒体存储。' },
       { key: 'static_tryon', label: '试穿照', state: 'demo', provider: 'mock', notice: '当前展示预置演示结果，未调用真实换装模型。' },
-      { key: 'size_analysis', label: '尺码差异', state: 'demo', provider: 'fit-engine-v1', notice: '当前使用示例商品尺码表和固定测试画像。' },
+      { key: 'size_analysis', label: '尺码差异', state: 'demo', provider: 'fit-engine-v1', notice: '当前使用示例商品尺码表和固定测试画像；真实模式支持为衣橱衣服录入尺码表。' },
       { key: 'body_measurement', label: '尺寸画像', state: 'demo', provider: 'mock', notice: '当前不依据照片推断真实尺寸。' },
       { key: 'realtime_tryon', label: '动态试衣', state: 'demo', provider: 'mock', notice: '当前只运行 15 秒交互演示，不生成实时换装流。' }
     ]

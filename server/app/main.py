@@ -30,6 +30,31 @@ from app.services.privacy import PrivacyService
 from app.services.retention import RetentionService
 
 
+def validate_production_environment(app_env: str) -> None:
+    if app_env != "production":
+        return
+    required_values = {
+        "WECHAT_APP_ID": os.getenv("WECHAT_APP_ID", ""),
+        "WECHAT_APP_SECRET": os.getenv("WECHAT_APP_SECRET", ""),
+        "FASHN_WORKER_URL": os.getenv("FASHN_WORKER_URL", ""),
+        "REALTIME_SESSION_URL": os.getenv("REALTIME_SESSION_URL", ""),
+        "BODY_SCAN_WORKER_URL": os.getenv("BODY_SCAN_WORKER_URL", ""),
+        "CONTENT_SAFETY_URL": os.getenv("CONTENT_SAFETY_URL", ""),
+    }
+    missing = [name for name, value in required_values.items() if not value]
+    if missing:
+        raise RuntimeError("Missing production configuration: " + ", ".join(missing))
+    selections = {
+        "TRYON_PROVIDER": (os.getenv("TRYON_PROVIDER", ""), "fashn-http"),
+        "REALTIME_PROVIDER": (os.getenv("REALTIME_PROVIDER", ""), "http"),
+        "BODY_SCAN_PROVIDER": (os.getenv("BODY_SCAN_PROVIDER", ""), "http"),
+        "CONTENT_SAFETY_PROVIDER": (os.getenv("CONTENT_SAFETY_PROVIDER", ""), "http"),
+    }
+    invalid = [name for name, (actual, expected) in selections.items() if actual != expected]
+    if invalid:
+        raise RuntimeError("Production forbids mock or disabled providers: " + ", ".join(invalid))
+
+
 async def run_retention_loop(
     service: RetentionService,
     person_days: int,
@@ -48,6 +73,7 @@ async def lifespan(app: FastAPI):
     auth_secret = os.getenv("AUTH_TOKEN_SECRET", "development-only-secret-change-me")
     if app_env == "production" and len(auth_secret) < 32:
         raise RuntimeError("AUTH_TOKEN_SECRET must contain at least 32 characters in production")
+    validate_production_environment(app_env)
     app.state.feedback_repository = FeedbackRepository(database_path)
     app.state.fit_profile_repository = FitProfileRepository(database_path)
     app.state.quota_repository = QuotaRepository(database_path)

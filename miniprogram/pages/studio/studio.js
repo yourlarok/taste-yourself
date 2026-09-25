@@ -51,6 +51,7 @@ Page({
     wardrobe: [],
     selectedGarmentId: '',
     selectedGarmentName: '',
+    selectedGarmentEditable: false,
     uploading: false,
     uploadPercent: 0,
     uploadError: '',             // '' | 'failed' | 'rejected'
@@ -75,6 +76,8 @@ Page({
     fitSourceText: '',
     fitErrorTitle: '',
     fitErrorDesc: '',
+    sizeEditorVisible: false,
+    sizeChartSaving: false,
     // scan
     scanVisible: false,
     scanState: 'consent',
@@ -146,6 +149,7 @@ Page({
           wardrobe,
           selectedGarmentId: first ? first.id : '',
           selectedGarmentName: first ? first.name : '',
+          selectedGarmentEditable: !!(first && first.source === 'wardrobe'),
           banner: { show: false, title: '', desc: '', actionText: '' }
         });
         this.prepareCamera();
@@ -249,6 +253,7 @@ Page({
     this.patch({
       selectedGarmentId: g.id,
       selectedGarmentName: g.name,
+      selectedGarmentEditable: g.source === 'wardrobe',
       quotaUsed: false,
       quotaHint: ''
     });
@@ -264,7 +269,15 @@ Page({
       confirmText: '选择图片',
       cancelText: '取消',
       success: (res) => {
-        if (res.confirm) this.chooseAndUpload();
+        if (res.confirm) {
+          wx.showActionSheet({
+            itemList: ['上装 / 外套', '下装', '连衣裙 / 连体装'],
+            success: (choice) => {
+              const categories = ['tops', 'bottoms', 'one-pieces'];
+              this.chooseAndUpload(categories[choice.tapIndex]);
+            }
+          });
+        }
       }
     });
   },
@@ -274,7 +287,7 @@ Page({
     this.chooseAndUpload();
   },
 
-  chooseAndUpload() {
+  chooseAndUpload(category) {
     wx.chooseMedia({
       count: 1,
       mediaType: ['image'],
@@ -283,7 +296,7 @@ Page({
         const file = res.tempFiles && res.tempFiles[0];
         if (!file || !file.tempFilePath) return;
         this.setData({ uploading: true, uploadPercent: 0, uploadError: '' });
-        api.uploadWardrobeGarment(file.tempFilePath, (p) => {
+        api.uploadWardrobeGarment(file.tempFilePath, category, (p) => {
           this.setData({ uploadPercent: Math.round(p) });
         }).then((r) => {
           const item = r.garment;
@@ -449,6 +462,30 @@ Page({
 
   onFitRetry() {
     this.loadFit();
+  },
+
+  onEditSizeChart() {
+    this.setData({ fitVisible: false, sizeEditorVisible: true });
+  },
+
+  onSizeChartClose() {
+    if (this.data.sizeChartSaving) return;
+    this.setData({ sizeEditorVisible: false, fitVisible: true });
+  },
+
+  onSizeChartSubmit(e) {
+    this.setData({ sizeChartSaving: true });
+    api.saveGarmentSizeChart(this.data.selectedGarmentId, e.detail)
+      .then(() => {
+        this.setData({ sizeChartSaving: false, sizeEditorVisible: false, fitVisible: true });
+        wx.showToast({ title: '尺码表已保存', icon: 'success' });
+        this.loadFit();
+      })
+      .catch((err) => {
+        this.setData({ sizeChartSaving: false });
+        const info = api.explainError(err, 'fit');
+        wx.showModal({ title: info.title, content: info.desc, showCancel: false });
+      });
   },
 
   loadFit() {

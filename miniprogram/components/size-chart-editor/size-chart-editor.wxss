@@ -1,0 +1,24 @@
+.sce-mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 80; background: var(--mask); opacity: 0; pointer-events: none; transition: opacity var(--dur) var(--ease); }
+.sce-mask.is-open { opacity: 1; pointer-events: auto; }
+.sce { position: fixed; left: 0; right: 0; bottom: 0; height: 88vh; z-index: 81; display: flex; flex-direction: column; background: var(--bg); border-radius: var(--r-l) var(--r-l) 0 0; transform: translateY(105%); transition: transform var(--dur-slow) var(--ease); }
+.sce.is-open { transform: translateY(0); }
+.sce__head { padding: var(--s4); display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1rpx solid var(--line); }
+.sce__eyebrow { display: block; color: var(--accent-deep); font-size: 20rpx; letter-spacing: 4rpx; }
+.sce__title { display: block; margin-top: 8rpx; font-family: var(--serif); font-size: var(--f-l); }
+.sce__close { width: 64rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; color: var(--ink-2); }
+.sce__body { flex: 1; min-height: 0; padding: var(--s3) var(--s4); }
+.sce__guide { display: block; color: var(--ink-2); font-size: var(--f-s); line-height: 1.7; }
+.sce__brand { margin-top: var(--s3); }
+.sce__label { display: block; margin-bottom: 8rpx; color: var(--ink-3); font-size: 20rpx; letter-spacing: 2rpx; }
+.sce__input { height: 76rpx; padding: 0 20rpx; border: 1rpx solid var(--line-strong); border-radius: var(--r-s); background: var(--surface); color: var(--ink-1); font-size: var(--f-s); }
+.sce-row { margin-top: var(--s4); padding: var(--s3); border: 1rpx solid var(--line); border-radius: var(--r-m); background: var(--surface); }
+.sce-row__top { display: flex; justify-content: space-between; margin-bottom: var(--s2); font-family: var(--serif); font-size: var(--f-m); }
+.sce-row__remove { color: var(--danger); font-family: sans-serif; font-size: var(--f-xs); }
+.sce-grid { display: flex; flex-wrap: wrap; margin: -8rpx; }
+.sce-field { width: 50%; padding: 8rpx; }
+.sce-field--size { width: 100%; }
+.sce__add { margin-top: var(--s3); min-height: 88rpx; border: 1rpx dashed var(--line-strong); border-radius: var(--r-m); display: flex; align-items: center; justify-content: center; color: var(--ink-2); font-size: var(--f-s); }
+.sce__space { height: var(--s6); }
+.sce__footer { padding: var(--s2) var(--s4) calc(var(--s3) + env(safe-area-inset-bottom)); border-top: 1rpx solid var(--line); background: var(--bg); }
+.sce__save { min-height: 92rpx; border: 0; border-radius: var(--r-full); background: var(--ink-1); color: var(--bg); font-size: var(--f-m); display: flex; align-items: center; justify-content: center; }
+.sce__save::after { border: 0; }

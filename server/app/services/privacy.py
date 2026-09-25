@@ -62,6 +62,7 @@ class PrivacyService:
 
             for table, identity_column in (
                 ("fit_feedback", "user_id"),
+                ("garment_size_charts", "user_id"),
                 ("wardrobe_garments", "user_id"),
                 ("person_images", "user_id"),
                 ("body_scans", "user_id"),

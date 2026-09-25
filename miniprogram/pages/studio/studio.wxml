@@ -140,10 +140,20 @@
     error-title="{{fitErrorTitle}}"
     error-desc="{{fitErrorDesc}}"
     garment-name="{{selectedGarmentName}}"
+    can-edit-size-chart="{{selectedGarmentEditable}}"
     bindclose="onFitClose"
     bindstart-scan="onStartScan"
     bindskip="onFitSkip"
     bindretry="onFitRetry"
+    bindedit-size-chart="onEditSizeChart"
+  />
+
+  <size-chart-editor
+    visible="{{sizeEditorVisible}}"
+    garment-name="{{selectedGarmentName}}"
+    saving="{{sizeChartSaving}}"
+    bindclose="onSizeChartClose"
+    bindsubmit="onSizeChartSubmit"
   />
 
   <!-- 尺寸画像采集 -->

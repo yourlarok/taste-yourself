@@ -9,7 +9,8 @@ Component({
     sourceText: { type: String, value: '' },   // 数据来源与测量误差
     errorTitle: { type: String, value: '' },
     errorDesc: { type: String, value: '' },
-    garmentName: { type: String, value: '' }
+    garmentName: { type: String, value: '' },
+    canEditSizeChart: { type: Boolean, value: false }
   },
 
   data: {
@@ -29,6 +30,7 @@ Component({
     onStartScan() { this.triggerEvent('start-scan'); },
     onSkip() { this.triggerEvent('skip'); },
     onRetry() { this.triggerEvent('retry'); },
+    onEditSizeChart() { this.triggerEvent('edit-size-chart'); },
     noop() {},
 
     onToggleRow(e) {

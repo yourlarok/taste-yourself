@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+from app.domain.models import ProductFitData
 from app.domain.wardrobe import GarmentRecord, PersonImageRecord
 from app.services.image_storage import StoredImage
 
@@ -48,6 +50,15 @@ class WardrobeRepository:
                 );
                 CREATE INDEX IF NOT EXISTS idx_person_user
                   ON person_images (user_id, created_at);
+
+                CREATE TABLE IF NOT EXISTS garment_size_charts (
+                  garment_id TEXT PRIMARY KEY,
+                  user_id TEXT NOT NULL,
+                  product_json TEXT NOT NULL,
+                  updated_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_size_chart_user
+                  ON garment_size_charts (user_id, updated_at);
                 """
             )
 
@@ -141,3 +152,42 @@ class WardrobeRepository:
                 "SELECT * FROM person_images WHERE id = ?", (image_id,)
             ).fetchone()
         return PersonImageRecord.model_validate(dict(row)) if row else None
+
+    def save_size_chart(
+        self,
+        garment_id: str,
+        user_id: str,
+        product: ProductFitData,
+    ) -> ProductFitData:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO garment_size_charts (
+                  garment_id, user_id, product_json, updated_at
+                ) VALUES (?, ?, ?, ?)
+                ON CONFLICT(garment_id) DO UPDATE SET
+                  user_id = excluded.user_id,
+                  product_json = excluded.product_json,
+                  updated_at = excluded.updated_at
+                """,
+                (
+                    garment_id,
+                    user_id,
+                    product.model_dump_json(),
+                    datetime.now(UTC).isoformat(),
+                ),
+            )
+        return product
+
+    def get_size_chart(self, garment_id: str, user_id: str) -> ProductFitData | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT product_json FROM garment_size_charts
+                WHERE garment_id = ? AND user_id = ?
+                """,
+                (garment_id, user_id),
+            ).fetchone()
+        if row is None:
+            return None
+        return ProductFitData.model_validate(json.loads(row["product_json"]))

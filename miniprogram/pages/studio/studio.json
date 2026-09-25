@@ -5,6 +5,7 @@
     "tryon-controls": "../../components/tryon-controls/tryon-controls",
     "fit-sheet": "../../components/fit-sheet/fit-sheet",
     "scan-guide": "../../components/scan-guide/scan-guide",
+    "size-chart-editor": "../../components/size-chart-editor/size-chart-editor",
     "task-progress": "../../components/task-progress/task-progress",
     "state-feedback": "../../components/state-feedback/state-feedback"
   }
