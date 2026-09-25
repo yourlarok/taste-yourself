@@ -1,7 +1,7 @@
 <view class="page {{reduceMotion ? 'reduce-motion' : ''}}" wx:if="{{layout}}" style="padding-top: {{layout.statusBarHeight}}px;">
 
   <!-- 顶部：衬线品牌名 + “我的”（右侧留白避开胶囊） -->
-  <view class="nav" style="height: {{layout.navContentHeight}}px;">
+  <view class="nav" style="top: {{layout.statusBarHeight}}px; height: {{layout.navContentHeight}}px;">
     <view class="nav__brand">
       <text class="nav__name">试衣空间</text>
       <text class="nav__sub">TASTE YOURSELF</text>

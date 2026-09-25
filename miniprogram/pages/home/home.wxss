@@ -1,4 +1,5 @@
 .page {
+  position: relative;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -21,7 +22,10 @@
 
 /* ---- 顶部 ---- */
 .nav {
-  position: relative;
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 12;
   display: flex;
   align-items: center;
   padding: 0 var(--s4);
@@ -31,6 +35,10 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding: 8rpx 18rpx 10rpx;
+  border-radius: var(--r-m);
+  background: rgba(253, 251, 247, 0.9);
+  box-shadow: 0 4rpx 18rpx rgba(33, 27, 20, 0.06);
 }
 
 .nav__name {
@@ -110,7 +118,7 @@
 .stage-wrap {
   flex: 1;
   min-height: 620rpx;
-  padding: var(--s2) var(--s4) 0;
+  padding: var(--s1) var(--s4) 0;
 }
 
 /* ---- 内容带：索引行 ---- */
