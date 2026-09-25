@@ -1,0 +1,97 @@
+<view class="sg {{visible ? 'is-open' : ''}}" catchtouchmove="noop">
+
+  <!-- 顶部：进度与取消 -->
+  <view class="sg__top">
+    <text class="sg__step-text" wx:if="{{state === 'front'}}">第 1 步 / 共 2 步 · 正面</text>
+    <text class="sg__step-text" wx:elif="{{state === 'side'}}">第 2 步 / 共 2 步 · 侧面</text>
+    <text class="sg__step-text" wx:else>尺寸画像</text>
+    <view class="sg__cancel" bindtap="onCancel" hover-class="tap-dim">取消</view>
+  </view>
+
+  <!-- 知情同意 -->
+  <view wx:if="{{state === 'consent'}}" class="sg__consent">
+    <text class="sg__consent-title">建立尺寸画像</text>
+    <text class="sg__consent-desc">采集正面与侧面轮廓，用于计算身体尺寸，对比衣服的尺码差异。</text>
+    <view class="sg__consent-points">
+      <text class="sg__consent-point">· 一次只采集一个角度，跟着语音与倒计时完成</text>
+      <text class="sg__consent-point">· 成功提取尺寸后，原始扫描帧将被删除</text>
+      <text class="sg__consent-point">· 画像可随时在“我的”中清除</text>
+    </view>
+    <view class="sg__btn-primary" bindtap="onAgree" hover-class="btn-press">开始采集</view>
+    <view class="sg__btn-plain" bindtap="onCancel" hover-class="tap-dim">暂不建立</view>
+  </view>
+
+  <!-- 正面 / 侧面采集 -->
+  <block wx:if="{{state === 'front' || state === 'side'}}">
+    <view class="sg__stage">
+      <camera
+        wx:if="{{cameraOk}}"
+        class="sg__camera"
+        device-position="front"
+        flash="off"
+        binderror="onCameraError"
+      ></camera>
+      <view wx:else class="sg__camera-placeholder">
+        <text class="sg__camera-tip">当前环境无法调用相机，将使用模拟采集演示流程</text>
+      </view>
+
+      <!-- 轮廓引导 -->
+      <view class="sg__outline">
+        <view class="sg__outline-head"></view>
+        <view class="sg__outline-body {{state === 'side' ? 'sg__outline-body--side' : ''}}"></view>
+      </view>
+
+      <!-- 倒计时 -->
+      <view wx:if="{{countdown > 0}}" class="sg__count">
+        <text class="sg__count-num">{{countdown}}</text>
+      </view>
+      <view wx:if="{{capturing}}" class="sg__flash"></view>
+    </view>
+
+    <text class="sg__guide">
+      {{state === 'front' ? '请正对屏幕站立，双臂自然，保持不动' : '请慢慢侧身站立，保持不动'}}
+    </text>
+    <text class="sg__guide-sub">倒计时结束后自动采集当前画面</text>
+  </block>
+
+  <!-- 上传 / 处理 -->
+  <view wx:if="{{state === 'uploading' || state === 'processing'}}" class="sg__processing">
+    <view class="spinner"></view>
+    <view class="sg__steps">
+      <view
+        wx:for="{{steps}}"
+        wx:key="*this"
+        class="sg__step {{index === stepIndex ? 'is-current' : ''}} {{index < stepIndex ? 'is-done' : ''}}"
+      >
+        <text class="sg__step-dot">{{index < stepIndex ? '✓' : index + 1}}</text>
+        <text class="sg__step-label">{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 需要补拍 -->
+  <view wx:if="{{state === 'needs_retake'}}" class="sg__result">
+    <view class="sg__result-icon">!</view>
+    <text class="sg__result-title">{{retakeSide === 'front' ? '正面' : '侧面'}}画面不符合要求</text>
+    <text class="sg__result-desc">只需重新拍摄该角度，已完成的画面会保留。</text>
+    <view class="sg__btn-primary" bindtap="onRetake" hover-class="btn-press">重新拍摄{{retakeSide === 'front' ? '正面' : '侧面'}}</view>
+  </view>
+
+  <!-- 完成 -->
+  <view wx:if="{{state === 'completed'}}" class="sg__result">
+    <view class="sg__result-icon sg__result-icon--ok">✓</view>
+    <text class="sg__result-title">尺寸画像已建立</text>
+    <text class="sg__result-desc">原始扫描帧已删除，只保留尺寸数据；画像可随时在“我的”中清除。</text>
+    <view class="sg__btn-primary" bindtap="onFinish" hover-class="btn-press">查看尺码差异</view>
+  </view>
+
+  <!-- 失败 -->
+  <view wx:if="{{state === 'failed'}}" class="sg__result">
+    <view class="sg__result-icon">!</view>
+    <text class="sg__result-title">{{failTitle}}</text>
+    <text class="sg__result-desc">{{failDesc}}</text>
+    <view class="sg__btn-primary" bindtap="onRetry" hover-class="btn-press">重试</view>
+    <view class="sg__btn-plain" bindtap="onCancel" hover-class="tap-dim">返回试衣</view>
+  </view>
+
+</view>

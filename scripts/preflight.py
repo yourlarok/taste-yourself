@@ -28,9 +28,11 @@ def main() -> int:
     if project.get("appid") in {None, "", "touristappid"}:
         failures.append("project.config.json 仍使用 touristappid")
 
-    mini_config = (ROOT / "miniprogram" / "config.js").read_text(encoding="utf-8")
-    if "api.example.com" in mini_config:
-        failures.append("miniprogram/config.js 仍包含示例 API 域名")
+    mini_config = (ROOT / "miniprogram" / "env.js").read_text(encoding="utf-8")
+    if "useMock: true" in mini_config:
+        failures.append("miniprogram/env.js 仍启用演示数据")
+    if "127.0.0.1" in mini_config or "your-server.example.com" in mini_config:
+        failures.append("miniprogram/env.js 仍使用本地或示例 API 地址")
 
     required = [
         "AUTH_TOKEN_SECRET",

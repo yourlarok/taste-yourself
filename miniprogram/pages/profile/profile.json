@@ -1,0 +1,6 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "state-feedback": "../../components/state-feedback/state-feedback"
+  }
+}

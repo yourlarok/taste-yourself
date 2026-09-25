@@ -1,0 +1,75 @@
+<view class="page" wx:if="{{layout}}" style="padding-top: {{layout.statusBarHeight}}px;">
+
+  <!-- 顶部：产品名 + “我的”（右侧留白避开胶囊） -->
+  <view class="nav" style="height: {{layout.navContentHeight}}px;">
+    <view class="nav__brand">
+      <text class="nav__name">试衣空间</text>
+      <text class="nav__sub">Taste Yourself</text>
+    </view>
+    <view class="nav__me" style="right: {{layout.capsuleRightGap}}px;" bindtap="goProfile" hover-class="tap-dim">我的</view>
+  </view>
+
+  <!-- 加载骨架 -->
+  <view wx:if="{{status === 'loading'}}" class="loading">
+    <view class="skeleton loading__stage"></view>
+    <view class="skeleton loading__line"></view>
+    <view class="skeleton loading__line loading__line--short"></view>
+  </view>
+
+  <!-- 错误态：说明 + 重试 -->
+  <view wx:elif="{{status === 'error'}}" class="error">
+    <state-feedback
+      kind="block"
+      tone="warn"
+      title="{{errorTitle}}"
+      desc="{{errorDesc}}"
+      action-text="重试"
+      bindaction="onRetry"
+    />
+  </view>
+
+  <block wx:else>
+    <!-- 主舞台：整块可点 -->
+    <view class="stage-wrap">
+      <mirror-stage
+        mode="{{status === 'ready' ? 'recent' : 'empty'}}"
+        garment-name="{{recent.garmentName}}"
+        updated-text="{{recent.updatedText}}"
+        result-image="{{recent.resultImage}}"
+        demo-name="{{demoGarment.name}}"
+        demo-image="{{demoGarment.image}}"
+        hint-text="开始第一次试穿"
+        bindenter="enterStudio"
+        bindchange="onStageChange"
+      />
+    </view>
+
+    <!-- 上下文内容带：紧凑行，不堆卡片 -->
+    <view class="band">
+      <view class="band__row" bindtap="enterStudio" hover-class="tap-dim">
+        <text class="band__label">上次试穿</text>
+        <image wx:if="{{status === 'ready'}}" class="band__thumb" src="{{recent.resultImage}}" mode="aspectFill"></image>
+        <text class="band__value {{status !== 'ready' ? 'band__value--dim' : ''}}">{{lastTryonText}}</text>
+      </view>
+
+      <view class="band__row" bindtap="enterStudio" hover-class="tap-dim">
+        <text class="band__label">我的衣橱</text>
+        <view class="band__thumbs">
+          <image wx:for="{{wardrobeThumbs}}" wx:key="id" class="band__thumb" src="{{item.image}}" mode="aspectFill"></image>
+        </view>
+        <text class="band__value">共 {{wardrobeCount}} 件</text>
+        <text class="band__add" catchtap="onAddGarment">添加衣服</text>
+      </view>
+
+      <view class="band__row band__row--static">
+        <text class="band__label">尺寸画像</text>
+        <text class="band__value band__value--dim">{{profileLine}}</text>
+      </view>
+    </view>
+
+    <!-- 唯一主动作 -->
+    <view class="cta" style="padding-bottom: {{layout.safeBottom + 12}}px;">
+      <view class="cta__btn" bindtap="enterStudio" hover-class="btn-press">{{ctaText}}</view>
+    </view>
+  </block>
+</view>

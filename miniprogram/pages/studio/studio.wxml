@@ -1,0 +1,132 @@
+<view class="studio" wx:if="{{layout}}">
+
+  <!-- 画布层：相机 / 结果图 / 取景占位 -->
+  <camera
+    wx:if="{{showCamera}}"
+    class="canvas"
+    device-position="front"
+    flash="off"
+    resolution="medium"
+    binderror="onCameraError"
+    bindinitdone="onCameraInit"
+  ></camera>
+
+  <view wx:if="{{phase === 'result'}}" class="canvas" bindtap="onTapResult">
+    <image class="canvas__img" src="{{resultImage}}" mode="aspectFill"></image>
+  </view>
+
+  <view wx:if="{{!showCamera && phase !== 'result'}}" class="canvas canvas--placeholder">
+    <view class="frame">
+      <view class="frame__corner frame__corner--tl"></view>
+      <view class="frame__corner frame__corner--tr"></view>
+      <view class="frame__corner frame__corner--bl"></view>
+      <view class="frame__corner frame__corner--br"></view>
+    </view>
+    <text class="canvas__tip">{{cameraTip}}</text>
+    <view wx:if="{{cameraAuth === 'denied'}}" class="canvas__auth" bindtap="onOpenSetting" hover-class="btn-press">开启相机权限</view>
+  </view>
+
+  <!-- 生成中：可感知进度，阻断重复提交 -->
+  <view wx:if="{{phase === 'capturing' || phase === 'generating'}}" class="genmask">
+    <view class="spinner spinner--light"></view>
+    <text class="genmask__text">{{generatingText}}</text>
+  </view>
+
+  <!-- 顶部：返回 / 一行状态 / 保存（右侧避开胶囊） -->
+  <view class="top" style="padding-top: {{layout.statusBarHeight}}px; height: {{layout.navBarHeight}}px;">
+    <view class="top__back" bindtap="onBack" hover-class="tap-dim">‹</view>
+    <text class="top__status">{{statusLine}}</text>
+    <view
+      wx:if="{{phase === 'result'}}"
+      class="top__save"
+      style="right: {{layout.capsuleRightGap}}px; top: {{layout.statusBarHeight + layout.navContentHeight / 2}}px;"
+      bindtap="onSave"
+      hover-class="tap-dim"
+    >保存</view>
+  </view>
+
+  <!-- 降级 / 错误横幅：不长期占据大面积 -->
+  <view wx:if="{{banner.show}}" class="banner" style="top: {{layout.navBarHeight + 8}}px;">
+    <state-feedback
+      kind="banner"
+      tone="warn"
+      title="{{banner.title}}"
+      desc="{{banner.desc}}"
+      action-text="{{banner.actionText}}"
+      closable
+      bindaction="onBannerAction"
+      bindclose="onBannerClose"
+    />
+  </view>
+
+  <!-- 动态试衣倒计时：始终可见 -->
+  <view wx:if="{{realtimeState === 'active'}}" class="rt" style="top: {{layout.navBarHeight + 24}}px;">
+    <text class="rt__num">{{countdown}}</text>
+    <text class="rt__unit">秒</text>
+  </view>
+
+  <!-- AI 生成提示 -->
+  <view wx:if="{{phase === 'result'}}" class="ai-chip" style="bottom: {{layout.safeBottom + 300}}px;">
+    AI 生成效果，仅供视觉体验
+  </view>
+
+  <!-- 底部操作层 -->
+  <view class="bottom" style="padding-bottom: {{layout.safeBottom + 12}}px;">
+    <garment-strip
+      catalog="{{catalog}}"
+      wardrobe="{{wardrobe}}"
+      selected-id="{{selectedGarmentId}}"
+      uploading="{{uploading}}"
+      upload-percent="{{uploadPercent}}"
+      upload-error="{{uploadError}}"
+      bindselect="onSelectGarment"
+      bindadd="onAddGarment"
+      bindretry-upload="onRetryUpload"
+    />
+    <tryon-controls
+      phase="{{phase}}"
+      garment-name="{{selectedGarmentName}}"
+      generate-disabled="{{generateDisabled}}"
+      disabled-hint="{{quotaHint}}"
+      generating-text="{{generatingText}}"
+      realtime-state="{{realtimeState}}"
+      bindgenerate="onGenerate"
+      bindopen-fit="onOpenFit"
+      bindstart-realtime="onStartRealtime"
+      bindend-realtime="onEndRealtime"
+    />
+  </view>
+
+  <!-- 尺码差异抽屉 -->
+  <fit-sheet
+    visible="{{fitVisible}}"
+    state="{{fitState}}"
+    rows="{{fitRows}}"
+    source-text="{{fitSourceText}}"
+    error-title="{{fitErrorTitle}}"
+    error-desc="{{fitErrorDesc}}"
+    garment-name="{{selectedGarmentName}}"
+    bindclose="onFitClose"
+    bindstart-scan="onStartScan"
+    bindskip="onFitSkip"
+    bindretry="onFitRetry"
+  />
+
+  <!-- 尺寸画像采集 -->
+  <scan-guide
+    id="scanGuide"
+    visible="{{scanVisible}}"
+    state="{{scanState}}"
+    retake-side="{{scanRetakeSide}}"
+    fail-title="{{scanFailTitle}}"
+    fail-desc="{{scanFailDesc}}"
+    processing-step="{{processingStep}}"
+    bindagree="onScanAgree"
+    bindcancel="onScanCancel"
+    bindcaptured="onScanCaptured"
+    bindretake="onScanRetake"
+    bindretry="onScanRetry"
+    bindfinish="onScanFinish"
+    bindbackground="onScanBackground"
+  />
+</view>

@@ -1,0 +1,90 @@
+<view class="page" wx:if="{{layout}}" style="padding-top: {{layout.statusBarHeight}}px;">
+
+  <view class="nav" style="height: {{layout.navContentHeight}}px;">
+    <view class="nav__back" bindtap="onBack" hover-class="tap-dim">‹</view>
+    <text class="nav__title">我的</text>
+  </view>
+
+  <view wx:if="{{!sessionReady}}" class="session">
+    <state-feedback
+      kind="banner"
+      tone="warn"
+      title="初始化未完成"
+      desc="部分数据可能无法加载，点击重试登录。"
+      action-text="重试"
+      bindaction="onRetryLogin"
+    />
+  </view>
+
+  <view wx:if="{{status === 'loading'}}" class="body">
+    <view class="skeleton skel-block"></view>
+    <view class="skeleton skel-block"></view>
+    <view class="skeleton skel-block skel-block--short"></view>
+  </view>
+
+  <view wx:elif="{{status === 'error'}}" class="body body--center">
+    <state-feedback
+      kind="block"
+      tone="warn"
+      title="{{errorTitle}}"
+      desc="{{errorDesc}}"
+      action-text="重试"
+      bindaction="onRetry"
+    />
+  </view>
+
+  <scroll-view wx:else class="body" scroll-y>
+
+    <!-- 今日用量 -->
+    <view class="section">
+      <text class="section__title">今日用量</text>
+      <view class="row">
+        <text class="row__label">静态试穿</text>
+        <text class="row__value">{{usage.static_used}} / {{usage.static_limit}} 次</text>
+      </view>
+      <view class="row">
+        <text class="row__label">动态试衣</text>
+        <text class="row__value">{{usage.realtime_used}} / {{usage.realtime_limit}} 次</text>
+      </view>
+      <text class="section__note">每天 0 点恢复。</text>
+    </view>
+
+    <!-- 尺寸画像 -->
+    <view class="section">
+      <text class="section__title">尺寸画像</text>
+      <view class="row">
+        <text class="row__label">状态</text>
+        <text class="row__value {{profileExists ? '' : 'row__value--dim'}}">{{profileLine}}</text>
+      </view>
+      <text class="section__note">{{profileCreatedText}}</text>
+      <view wx:if="{{profileExists}}" class="btn-ghost" bindtap="onClearProfile" hover-class="tap-dim">清除尺寸画像</view>
+    </view>
+
+    <!-- 隐私保护指引 -->
+    <view class="section">
+      <view class="row row--tap" bindtap="onTogglePrivacy" hover-class="tap-dim">
+        <text class="row__label">隐私保护指引</text>
+        <text class="row__arrow {{privacyOpen ? 'is-open' : ''}}">›</text>
+      </view>
+      <view wx:if="{{privacyOpen}}" class="privacy">
+        <text class="privacy__text">· 试穿画面只用于生成当次试穿照，不做其他用途。</text>
+        <text class="privacy__text">· 尺寸画像提取成功后，原始扫描帧会被删除，只保留尺寸数据。</text>
+        <text class="privacy__text">· 相机、相册权限只在你使用对应功能时申请。</text>
+        <text class="privacy__text">· 你可以随时清除尺寸画像，或删除全部数据。</text>
+      </view>
+    </view>
+
+    <!-- 删除全部数据 -->
+    <view class="section">
+      <view class="row row--tap" bindtap="onDeleteAll" hover-class="tap-dim">
+        <text class="row__label row__label--danger">{{deleting ? '正在删除…' : '删除全部数据'}}</text>
+        <view class="spinner" wx:if="{{deleting}}"></view>
+      </view>
+      <text class="section__note">包括衣橱、试穿记录、尺寸画像与用量，删除后无法恢复，需二次确认。</text>
+    </view>
+
+    <view class="footer" style="padding-bottom: {{layout.safeBottom + 24}}px;">
+      <text class="footer__text">Taste Yourself · 线上试衣空间</text>
+    </view>
+  </scroll-view>
+</view>

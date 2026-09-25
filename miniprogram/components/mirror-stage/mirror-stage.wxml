@@ -1,0 +1,49 @@
+<view class="stage" hover-class="stage-press" hover-stay-time="80" bindtap="onEnter">
+
+  <!-- 有最近试穿：结果图铺底 + 明确动作 -->
+  <block wx:if="{{mode === 'recent'}}">
+    <image class="stage__bg" src="{{resultImage}}" mode="aspectFill"></image>
+    <view class="stage__veil"></view>
+    <view class="stage__recent">
+      <text class="stage__gname">{{garmentName}}</text>
+      <text class="stage__time">上次试穿 · {{updatedText}}</text>
+      <view class="stage__actions">
+        <view class="stage__pill" hover-class="tap-dim">继续上次试穿</view>
+        <view class="stage__ghost" catchtap="onChange" hover-class="tap-dim">更换衣服</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 首次使用：镜面三步引导，全区域可点 -->
+  <block wx:else>
+    <view class="stage__mirror">
+      <view class="stage__steps">
+        <view class="stage__step">
+          <text class="stage__no">①</text>
+          <text class="stage__step-text">选择或拍一件衣服</text>
+        </view>
+        <view class="stage__step-line"></view>
+        <view class="stage__step">
+          <text class="stage__no">②</text>
+          <text class="stage__step-text">站到镜前</text>
+        </view>
+        <view class="stage__step-line"></view>
+        <view class="stage__step">
+          <text class="stage__no">③</text>
+          <text class="stage__step-text">生成试穿照</text>
+        </view>
+      </view>
+
+      <view class="stage__demo">
+        <image class="stage__demo-img" src="{{demoImage}}" mode="aspectFill"></image>
+        <text class="stage__demo-text">{{demoName}}</text>
+        <text class="stage__demo-sub">可先用示例衣服体验</text>
+      </view>
+
+      <view class="stage__hint">
+        <text class="stage__hint-text">{{hintText}}</text>
+        <text class="stage__hint-arrow">→</text>
+      </view>
+    </view>
+  </block>
+</view>

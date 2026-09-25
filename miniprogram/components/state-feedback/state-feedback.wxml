@@ -1,0 +1,12 @@
+<view class="sf sf--{{kind}} sf--{{tone}}">
+  <view class="sf__icon">{{iconText}}</view>
+  <view class="sf__body">
+    <text class="sf__title">{{title}}</text>
+    <text class="sf__desc" wx:if="{{desc}}">{{desc}}</text>
+    <view class="sf__actions" wx:if="{{actionText || secondaryText}}">
+      <view class="sf__btn sf__btn--primary" wx:if="{{actionText}}" bindtap="onAction" hover-class="tap-dim">{{actionText}}</view>
+      <view class="sf__btn" wx:if="{{secondaryText}}" bindtap="onSecondary" hover-class="tap-dim">{{secondaryText}}</view>
+    </view>
+  </view>
+  <view class="sf__close" wx:if="{{closable}}" bindtap="onClose" hover-class="tap-dim">×</view>
+</view>

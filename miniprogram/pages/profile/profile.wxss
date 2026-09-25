@@ -1,0 +1,155 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--s2);
+}
+
+.nav__back {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56rpx;
+  color: var(--ink-1);
+}
+
+.nav__title {
+  font-size: var(--f-m);
+  font-weight: 600;
+  letter-spacing: 2rpx;
+}
+
+.session {
+  padding: var(--s2) var(--s4) 0;
+}
+
+.body {
+  flex: 1;
+  padding: var(--s3) var(--s4) 0;
+}
+
+.body--center {
+  display: flex;
+  justify-content: center;
+}
+
+.skel-block {
+  height: 160rpx;
+  margin-bottom: var(--s3);
+}
+
+.skel-block--short {
+  height: 96rpx;
+}
+
+/* ---- 分区 ---- */
+.section {
+  background: var(--surface);
+  border-radius: var(--r-m);
+  padding: var(--s3) var(--s4);
+  margin-bottom: var(--s3);
+}
+
+.section__title {
+  font-size: var(--f-s);
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 96rpx;
+  border-top: 1rpx solid var(--line);
+  margin-top: var(--s2);
+}
+
+.row:first-of-type {
+  border-top: none;
+}
+
+.row--tap {
+  cursor: pointer;
+}
+
+.row__label {
+  font-size: var(--f-m);
+  color: var(--ink-1);
+}
+
+.row__label--danger {
+  color: var(--danger);
+}
+
+.row__value {
+  font-size: var(--f-m);
+  color: var(--ink-1);
+}
+
+.row__value--dim {
+  color: var(--ink-3);
+}
+
+.row__arrow {
+  color: var(--ink-3);
+  font-size: 36rpx;
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.row__arrow.is-open {
+  transform: rotate(90deg);
+}
+
+.section__note {
+  display: block;
+  font-size: var(--f-xs);
+  color: var(--ink-3);
+  line-height: 1.6;
+  margin-top: 4rpx;
+}
+
+.btn-ghost {
+  margin-top: var(--s2);
+  min-height: 88rpx;
+  border-radius: var(--r-full);
+  border: 1rpx solid var(--line-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--f-s);
+  color: var(--ink-1);
+}
+
+.privacy {
+  padding: var(--s1) 0 var(--s2);
+  display: flex;
+  flex-direction: column;
+}
+
+.privacy__text {
+  font-size: var(--f-s);
+  color: var(--ink-2);
+  line-height: 1.9;
+}
+
+.footer {
+  padding-top: var(--s4);
+  display: flex;
+  justify-content: center;
+}
+
+.footer__text {
+  font-size: 20rpx;
+  color: var(--ink-3);
+  letter-spacing: 2rpx;
+}

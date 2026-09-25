@@ -14,7 +14,7 @@
 1. 复制 `.env.example` 为 `.env`，生成至少 32 字符的随机 `AUTH_TOKEN_SECRET` 和独立 `FASHN_WORKER_TOKEN`。
 2. 填写正式微信 AppID/AppSecret。AppSecret 只存在服务器环境变量中。
 3. 准备已备案域名，将 `PUBLIC_DOMAIN` 指向服务器。
-4. 把 `miniprogram/config.js` 的 `trial`、`release` 地址改成 `https://你的域名/api/v1`。
+4. 把 `miniprogram/env.js` 的 `useMock` 改为 `false`，并把 `baseUrl` 改成后端 HTTPS 域名（不含 `/api/v1`）。
 5. 在小程序后台登记 request、uploadFile、downloadFile 合法域名。
 6. 在具备 NVIDIA Container Toolkit、Ampere 或更新架构 GPU 的主机准备 FASHN 权重目录。
 7. 配置真实 `BODY_SCAN_PROVIDER`、`CONTENT_SAFETY_PROVIDER` 和 `REALTIME_PROVIDER`；生产预检会拒绝模拟 Provider。

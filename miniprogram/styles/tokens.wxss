@@ -1,0 +1,66 @@
+/* tokens.wxss — 设计 token：色彩 / 间距 / 圆角 / 字号 / 阴影 / 动效
+ * 气质：安静、克制、可信、偏编辑设计。暖中性色 + 一个低饱和强调色。
+ * 颜色不用于表达“尺码正确/错误”，只表达信息层级；danger 仅用于删除类危险操作。
+ */
+page {
+  /* 色彩 */
+  --bg: #FAF7F1;
+  --surface: #FFFFFF;
+  --surface-warm: #F3EDE3;
+  --ink-1: #2B2620;
+  --ink-2: #7D7266;
+  --ink-3: #AFA393;
+  --line: #E7DFD2;
+  --line-strong: #D5C9B6;
+  --accent: #A26E4B;
+  --accent-deep: #875636;
+  --accent-soft: #F1E4D7;
+  --mask: rgba(32, 27, 22, 0.45);
+  --danger: #A8543F;
+
+  /* 间距：8rpx 基线 */
+  --s1: 8rpx;
+  --s2: 16rpx;
+  --s3: 24rpx;
+  --s4: 32rpx;
+  --s5: 40rpx;
+  --s6: 48rpx;
+  --s8: 64rpx;
+  --s10: 80rpx;
+
+  /* 圆角 */
+  --r-s: 12rpx;
+  --r-m: 20rpx;
+  --r-l: 32rpx;
+  --r-full: 999rpx;
+
+  /* 字号 */
+  --f-xs: 22rpx;
+  --f-s: 26rpx;
+  --f-m: 30rpx;
+  --f-l: 36rpx;
+  --f-xl: 44rpx;
+  --f-xxl: 56rpx;
+
+  /* 阴影 */
+  --shadow-1: 0 6rpx 24rpx rgba(43, 38, 32, 0.07);
+  --shadow-2: 0 16rpx 48rpx rgba(43, 38, 32, 0.14);
+
+  /* 动效：单次 180–280ms，仅用于连续性与状态反馈 */
+  --dur-fast: 180ms;
+  --dur: 240ms;
+  --dur-slow: 280ms;
+  --ease: cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+
+/* 通用按压反馈：所有可点区域统一使用，保证可感知且克制 */
+.tap-dim {
+  opacity: 0.55;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.btn-press {
+  opacity: 0.88;
+  transform: scale(0.985);
+  transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}

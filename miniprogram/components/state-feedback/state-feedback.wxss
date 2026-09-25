@@ -1,0 +1,122 @@
+.sf {
+  display: flex;
+  align-items: flex-start;
+  border-radius: var(--r-m);
+}
+
+.sf--block {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--s6) var(--s5);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.sf--banner {
+  flex-direction: row;
+  padding: var(--s2) var(--s3);
+  background: var(--surface);
+  border: 1rpx solid var(--line);
+  box-shadow: var(--shadow-1);
+}
+
+.sf__icon {
+  flex: none;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--f-xs);
+  font-weight: 600;
+}
+
+.sf--block .sf__icon {
+  margin-bottom: var(--s2);
+  width: 56rpx;
+  height: 56rpx;
+  font-size: var(--f-s);
+}
+
+.sf--banner .sf__icon {
+  margin-right: var(--s2);
+  margin-top: 4rpx;
+}
+
+.sf--info .sf__icon { background: var(--surface-warm); color: var(--ink-2); }
+.sf--warn .sf__icon { background: var(--accent-soft); color: var(--accent-deep); }
+.sf--error .sf__icon { background: var(--accent-soft); color: var(--accent-deep); }
+
+.sf__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: inherit;
+}
+
+.sf__title {
+  font-size: var(--f-m);
+  font-weight: 600;
+  color: var(--ink-1);
+}
+
+.sf--banner .sf__title {
+  font-size: var(--f-s);
+}
+
+.sf__desc {
+  margin-top: 6rpx;
+  font-size: var(--f-s);
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+.sf--banner .sf__desc {
+  font-size: var(--f-xs);
+}
+
+.sf__actions {
+  margin-top: var(--s3);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.sf--banner .sf__actions {
+  margin-top: var(--s1);
+}
+
+.sf__btn {
+  min-height: 64rpx;
+  padding: 0 var(--s3);
+  border-radius: var(--r-full);
+  display: flex;
+  align-items: center;
+  font-size: var(--f-s);
+  color: var(--ink-2);
+}
+
+.sf__btn--primary {
+  background: var(--ink-1);
+  color: var(--bg);
+  margin-right: var(--s2);
+}
+
+.sf--banner .sf__btn {
+  min-height: 52rpx;
+  padding: 0 var(--s2);
+  font-size: var(--f-xs);
+}
+
+.sf__close {
+  flex: none;
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-3);
+  font-size: 36rpx;
+}

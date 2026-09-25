@@ -32,12 +32,12 @@ python -m pip install -e ".[dev]"
 
 1. 打开微信开发者工具，选择“导入项目”。
 2. 项目目录选择 `C:\Users\Administrator\taste-yourself`。
-3. 当前 `project.config.json` 使用 `touristappid`，可直接进行模拟器开发；有正式 AppID 后替换该值。
+3. 当前 `project.config.json` 已配置项目 AppID；如用其他小程序账号测试，再替换为对应 AppID。
 4. 打开“详情 → 本地设置”，仅在本地开发期间勾选“不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书”。
 5. 点击“编译”。
 
 正式体验版不能依赖这个本地开关；必须使用备案、有效 HTTPS 证书且已在小程序后台登记的请求域名。
-部署后还需把 `miniprogram/config.js` 中 `trial` 和 `release` 的示例地址替换成真实 API 域名。
+本地视觉验收默认使用 `miniprogram/env.js` 的 Mock 数据。联调时将 `useMock` 改为 `false`，并把 `baseUrl` 设为后端地址；发布体验版前必须使用已加入微信 request/uploadFile/downloadFile 合法域名的 HTTPS 地址。
 
 ## 3. 验收脚本
 

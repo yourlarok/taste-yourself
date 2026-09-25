@@ -1,10 +1,56 @@
+@import "styles/tokens.wxss";
+
 page {
-  min-height: 100%;
-  background: #e9e2d8;
-  color: #211e1a;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--ink-1);
+  font-size: var(--f-m);
+  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, sans-serif;
 }
 
-button::after {
-  border: 0;
+view, text, image, scroll-view {
+  box-sizing: border-box;
+}
+
+/* 通用加载骨架：呼吸明暗，不使用色块冒充最终内容（骨架仅出现在加载中） */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-warm);
+  border-radius: var(--r-s);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(255, 255, 255, 0) 100%);
+  animation: skeleton-sweep 1.4s var(--ease) infinite;
+}
+
+@keyframes skeleton-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* 通用加载指示 */
+.spinner {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  border: 3rpx solid var(--line-strong);
+  border-top-color: var(--accent);
+  animation: spin 0.9s linear infinite;
+}
+
+.spinner--light {
+  border-color: rgba(255, 255, 255, 0.4);
+  border-top-color: #FFFFFF;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

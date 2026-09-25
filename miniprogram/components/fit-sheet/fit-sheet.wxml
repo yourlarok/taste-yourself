@@ -1,0 +1,109 @@
+<view class="fs-mask {{visible ? 'is-open' : ''}}" bindtap="onMaskTap"></view>
+
+<view class="fs {{visible ? 'is-open' : ''}}" catchtouchmove="noop">
+  <view class="fs__grabber"></view>
+
+  <view class="fs__head">
+    <view class="fs__head-text">
+      <text class="fs__title">尺码差异</text>
+      <text class="fs__subtitle" wx:if="{{garmentName}}">{{garmentName}} · 按商品原始尺码顺序 · 仅作分析，不作推荐</text>
+      <text class="fs__subtitle" wx:else>按商品原始尺码顺序 · 仅作分析，不作推荐</text>
+    </view>
+    <view class="fs__close" bindtap="onClose" hover-class="tap-dim">×</view>
+  </view>
+
+  <!-- 缺少尺寸画像：先解释，再由用户决定 -->
+  <scroll-view wx:if="{{state === 'profile_required'}}" class="fs__body" scroll-y>
+    <view class="fs__explain">
+      <text class="fs__explain-title">查看尺码差异前，需要一份尺寸画像</text>
+      <view class="fs__explain-item">
+        <text class="fs__explain-label">用途</text>
+        <text class="fs__explain-text">用你的身体尺寸对比衣服各尺码的成衣尺寸，展示差异，不替你选尺码。</text>
+      </view>
+      <view class="fs__explain-item">
+        <text class="fs__explain-label">采集内容</text>
+        <text class="fs__explain-text">在镜前完成一次正面、一次侧面的轮廓采集，约 30 秒。</text>
+      </view>
+      <view class="fs__explain-item">
+        <text class="fs__explain-label">删除策略</text>
+        <text class="fs__explain-text">成功提取尺寸后，原始扫描帧会被删除；画像可随时在“我的”中清除。</text>
+      </view>
+      <view class="fs__explain-actions">
+        <view class="fs__btn-primary" bindtap="onStartScan" hover-class="btn-press">建立尺寸画像</view>
+        <view class="fs__btn-plain" bindtap="onSkip" hover-class="tap-dim">暂不建立</view>
+      </view>
+      <text class="fs__explain-note">不建立画像也可以继续视觉试穿。</text>
+    </view>
+  </scroll-view>
+
+  <!-- 加载中：骨架 -->
+  <view wx:elif="{{state === 'loading'}}" class="fs__body">
+    <view class="fs-skel" wx:for="{{[1, 2, 3]}}" wx:key="*this">
+      <view class="skeleton fs-skel__size"></view>
+      <view class="skeleton fs-skel__line"></view>
+      <view class="skeleton fs-skel__line fs-skel__line--short"></view>
+    </view>
+  </view>
+
+  <!-- 商品尺码数据缺失 -->
+  <view wx:elif="{{state === 'missing_product_data'}}" class="fs__body">
+    <state-feedback
+      kind="block"
+      tone="info"
+      title="该商品暂无尺码数据"
+      desc="暂时无法对比各尺码的差异，仍可继续视觉试穿。"
+      action-text="知道了"
+      bindaction="onClose"
+    />
+  </view>
+
+  <!-- 错误 -->
+  <view wx:elif="{{state === 'error'}}" class="fs__body">
+    <state-feedback
+      kind="block"
+      tone="warn"
+      title="{{errorTitle}}"
+      desc="{{errorDesc}}"
+      action-text="重试"
+      secondary-text="返回"
+      bindaction="onRetry"
+      bindsecondary="onClose"
+    />
+  </view>
+
+  <!-- 完整结果 -->
+  <scroll-view wx:elif="{{state === 'ready'}}" class="fs__body" scroll-y>
+    <view class="fs-row" wx:for="{{rows}}" wx:key="size">
+      <view class="fs-row__head" data-index="{{index}}" bindtap="onToggleRow" hover-class="tap-dim">
+        <text class="fs-row__size">{{item.size}}</text>
+        <text class="fs-row__tag fs-row__tag--{{item.tone}}">{{item.tag}}</text>
+        <text class="fs-row__arrow {{expandedIndex === index ? 'is-open' : ''}}">›</text>
+      </view>
+      <text class="fs-row__summary">{{item.summary}}</text>
+
+      <view wx:if="{{expandedIndex === index}}" class="fs-row__detail">
+        <view class="fs-metric" wx:for="{{item.metrics}}" wx:for-item="m" wx:key="label">
+          <view class="fs-metric__top">
+            <text class="fs-metric__label">{{m.label}}</text>
+            <text class="fs-metric__nums">{{m.numsText}}</text>
+          </view>
+          <view class="fs-track" wx:if="{{m.hasRange}}">
+            <view class="fs-track__band" style="left: {{m.bandLeft}}%; width: {{m.bandWidth}}%;"></view>
+            <view class="fs-track__dot" style="left: {{m.dotPct}}%;"></view>
+          </view>
+          <text class="fs-metric__range" wx:if="{{m.hasRange}}">参考余量 {{m.rangeText}} · {{m.positionText}}</text>
+        </view>
+        <text class="fs-row__note">{{item.note}}</text>
+      </view>
+    </view>
+
+    <!-- 数据来源与测量误差 -->
+    <view class="fs-source">
+      <view class="fs-source__head" bindtap="onToggleSource" hover-class="tap-dim">
+        <text class="fs-source__title">数据来源与测量误差</text>
+        <text class="fs-row__arrow {{sourceOpen ? 'is-open' : ''}}">›</text>
+      </view>
+      <text wx:if="{{sourceOpen}}" class="fs-source__text">{{sourceText}}</text>
+    </view>
+  </scroll-view>
+</view>

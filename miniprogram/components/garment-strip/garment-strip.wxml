@@ -1,0 +1,69 @@
+<scroll-view class="gs" scroll-x enhanced show-scrollbar="{{false}}">
+  <view class="gs__row">
+
+    <text class="gs__section">示例衣服</text>
+    <view
+      wx:for="{{catalogView}}"
+      wx:key="id"
+      class="gs__item {{item.id === selectedId ? 'is-selected' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="onSelect"
+      hover-class="tap-dim"
+    >
+      <view class="gs__thumb">
+        <image wx:if="{{!item.broken}}" src="{{item.image}}" mode="aspectFill" data-id="{{item.id}}" binderror="onImageError"></image>
+        <view wx:else class="gs__broken">图片失效</view>
+        <view wx:if="{{item.id === selectedId}}" class="gs__check">✓</view>
+      </view>
+      <text class="gs__name">{{item.name}}</text>
+    </view>
+
+    <text class="gs__section">我的衣橱</text>
+    <block wx:if="{{wardrobeView.length > 0}}">
+      <view
+        wx:for="{{wardrobeView}}"
+        wx:key="id"
+        class="gs__item {{item.id === selectedId ? 'is-selected' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onSelect"
+        hover-class="tap-dim"
+      >
+        <view class="gs__thumb">
+          <image wx:if="{{!item.broken}}" src="{{item.image}}" mode="aspectFill" data-id="{{item.id}}" binderror="onImageError"></image>
+          <view wx:else class="gs__broken">图片失效</view>
+          <view wx:if="{{item.id === selectedId}}" class="gs__check">✓</view>
+        </view>
+        <text class="gs__name">{{item.name}}</text>
+      </view>
+    </block>
+    <view wx:else class="gs__empty">衣橱还是空的</view>
+
+    <!-- 上传中 -->
+    <view wx:if="{{uploading}}" class="gs__item gs__item--static">
+      <view class="gs__thumb gs__thumb--status">
+        <view class="spinner"></view>
+        <text class="gs__status-text">{{uploadPercent}}%</text>
+      </view>
+      <text class="gs__name">上传中…</text>
+    </view>
+
+    <!-- 上传失败 / 审核拒绝 -->
+    <view wx:elif="{{uploadError}}" class="gs__item gs__item--static" bindtap="onRetry" hover-class="tap-dim">
+      <view class="gs__thumb gs__thumb--status gs__thumb--error">
+        <text class="gs__status-title">{{uploadError === 'rejected' ? '审核未通过' : '上传失败'}}</text>
+        <text class="gs__status-text">点击重试</text>
+      </view>
+      <text class="gs__name">　</text>
+    </view>
+
+    <!-- 添加衣服：轨道末尾 -->
+    <view class="gs__item gs__item--static" bindtap="onAdd" hover-class="tap-dim">
+      <view class="gs__thumb gs__thumb--add">
+        <text class="gs__add-icon">＋</text>
+        <text class="gs__add-text">添加衣服</text>
+      </view>
+      <text class="gs__name">　</text>
+    </view>
+
+  </view>
+</scroll-view>

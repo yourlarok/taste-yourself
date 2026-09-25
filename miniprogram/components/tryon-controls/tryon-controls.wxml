@@ -1,0 +1,47 @@
+<view class="tc">
+
+  <!-- 常规：主操作 + 二级入口 -->
+  <block wx:if="{{!realtimeUi}}">
+    <view
+      class="tc__main {{generateDisabled ? 'is-disabled' : ''}}"
+      bindtap="onGenerate"
+      hover-class="{{generateDisabled || busy ? '' : 'btn-press'}}"
+    >
+      <block wx:if="{{busy}}">
+        <view class="spinner spinner--light"></view>
+        <text class="tc__main-text">{{generatingText}}</text>
+      </block>
+      <block wx:else>
+        <view class="tc__shutter"></view>
+        <text class="tc__main-text">{{mainText}}</text>
+      </block>
+    </view>
+
+    <text class="tc__hint" wx:if="{{disabledHint}}">{{disabledHint}}</text>
+
+    <view class="tc__sub">
+      <view class="tc__subbtn" bindtap="onOpenFit" hover-class="tap-dim">尺码差异</view>
+      <view class="tc__divider"></view>
+      <view class="tc__subbtn" bindtap="onStartRealtime" hover-class="tap-dim">动态试衣 · 15 秒</view>
+    </view>
+  </block>
+
+  <!-- 动态试衣进行中 -->
+  <block wx:else>
+    <view class="tc__rt">
+      <view class="tc__rt-info">
+        <view class="spinner spinner--light" wx:if="{{realtimeState === 'connecting'}}"></view>
+        <view class="tc__rt-dot" wx:if="{{realtimeState === 'active'}}"></view>
+        <text class="tc__rt-text">
+          {{realtimeState === 'connecting' ? '正在建立动态链路…' : realtimeState === 'ending' ? '正在结束…' : '动态试衣进行中'}}
+        </text>
+      </view>
+      <view
+        class="tc__rt-end {{realtimeState !== 'active' ? 'is-disabled' : ''}}"
+        bindtap="onEndRealtime"
+        hover-class="{{realtimeState === 'active' ? 'btn-press' : ''}}"
+      >提前结束</view>
+    </view>
+  </block>
+
+</view>

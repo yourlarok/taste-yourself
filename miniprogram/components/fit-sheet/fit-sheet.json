@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "state-feedback": "../state-feedback/state-feedback"
+  }
+}

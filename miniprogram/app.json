@@ -1,21 +1,15 @@
 {
   "pages": [
-    "pages/mirror/index"
+    "pages/home/home",
+    "pages/studio/studio",
+    "pages/profile/profile"
   ],
   "window": {
     "navigationStyle": "custom",
-    "backgroundColor": "#e9e2d8",
+    "backgroundColor": "#FAF7F1",
     "backgroundTextStyle": "dark"
   },
-  "permission": {
-    "scope.camera": {
-      "desc": "用于拍摄本人画面、建立尺寸画像和进行试衣体验"
-    },
-    "scope.writePhotosAlbum": {
-      "desc": "用于在你主动点击保存时，将试穿结果保存到相册"
-    }
-  },
-  "__usePrivacyCheck__": true,
   "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
   "sitemapLocation": "sitemap.json"
 }
