@@ -11,6 +11,7 @@ from app.api.routes import router
 from app.providers.body_scan import HttpBodyScanProvider, MockBodyScanProvider
 from app.providers.content_safety import HttpContentSafetyProvider, MockContentSafetyProvider
 from app.providers.realtime import (
+    DecartRealtimeProvider,
     DisabledRealtimeProvider,
     HttpRealtimeProvider,
     MockRealtimeProvider,
@@ -51,11 +52,11 @@ def validate_production_environment(app_env: str) -> None:
     if tryon_provider == "fashn-api" and not os.getenv("FASHN_API_KEY"):
         raise RuntimeError("Missing production configuration: FASHN_API_KEY")
     selections = {
-        "REALTIME_PROVIDER": (os.getenv("REALTIME_PROVIDER", ""), "http"),
-        "BODY_SCAN_PROVIDER": (os.getenv("BODY_SCAN_PROVIDER", ""), "http"),
-        "CONTENT_SAFETY_PROVIDER": (os.getenv("CONTENT_SAFETY_PROVIDER", ""), "http"),
+        "REALTIME_PROVIDER": (os.getenv("REALTIME_PROVIDER", ""), {"http", "decart"}),
+        "BODY_SCAN_PROVIDER": (os.getenv("BODY_SCAN_PROVIDER", ""), {"http"}),
+        "CONTENT_SAFETY_PROVIDER": (os.getenv("CONTENT_SAFETY_PROVIDER", ""), {"http"}),
     }
-    invalid = [name for name, (actual, expected) in selections.items() if actual != expected]
+    invalid = [name for name, (actual, expected) in selections.items() if actual not in expected]
     if invalid:
         raise RuntimeError("Production forbids mock or disabled providers: " + ", ".join(invalid))
 
@@ -157,6 +158,15 @@ async def lifespan(app: FastAPI):
         app.state.realtime_provider = HttpRealtimeProvider(
             realtime_session_url,
             os.getenv("REALTIME_PROVIDER_TOKEN", ""),
+        )
+    elif realtime_provider_name == "decart":
+        realtime_session_url = os.getenv("REALTIME_SESSION_URL")
+        if not realtime_session_url:
+            raise RuntimeError("REALTIME_SESSION_URL is required for REALTIME_PROVIDER=decart")
+        app.state.realtime_provider = DecartRealtimeProvider(
+            realtime_session_url,
+            os.getenv("REALTIME_PROVIDER_TOKEN", ""),
+            os.getenv("DECART_API_KEY", ""),
         )
     else:
         raise RuntimeError(f"Unsupported REALTIME_PROVIDER: {realtime_provider_name}")
