@@ -9,6 +9,7 @@ venv/
 *.db
 *.sqlite3
 server/data/
+/data/
 dist/
 build/
 project.private.config.json
