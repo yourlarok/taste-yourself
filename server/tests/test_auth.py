@@ -55,6 +55,10 @@ def test_production_rejects_missing_authentication(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("BODY_SCAN_WORKER_URL", "http://measurement.test")
     monkeypatch.setenv("CONTENT_SAFETY_PROVIDER", "http")
     monkeypatch.setenv("CONTENT_SAFETY_URL", "http://safety.test")
+    monkeypatch.setenv("MIRROR_LLM_BASE_URL", "http://llm.test/v1")
+    monkeypatch.setenv("MIRROR_LLM_API_KEY", "test-llm-key")
+    monkeypatch.setenv("MIRROR_LLM_MODEL", "test-model")
+    monkeypatch.setenv("MIRROR_VISION_MODEL", "test-vision-model")
 
     with TestClient(app) as client:
         response = client.post(

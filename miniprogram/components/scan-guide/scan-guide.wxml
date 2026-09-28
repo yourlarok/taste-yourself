@@ -11,11 +11,34 @@
   <!-- 知情同意 -->
   <view wx:if="{{state === 'consent'}}" class="sg__consent">
     <text class="sg__consent-title">建立尺寸画像</text>
-    <text class="sg__consent-desc">采集正面与侧面轮廓，用于计算身体尺寸，对比衣服的尺码差异。</text>
+    <text class="sg__consent-desc">相机语音引导采集正面与右侧面，由 Bodygram 视觉测量后再与真实成衣尺码表逐项对比。</text>
+    <view class="sg__calibration">
+      <text class="sg__calibration-title">首次校准 · 之后会在本机预填</text>
+      <view class="sg__calibration-row">
+        <view class="sg__calibration-field">
+          <text class="sg__calibration-label">年龄</text>
+          <input class="sg__calibration-input" type="number" value="{{age}}" placeholder="18+" bindinput="onAgeInput" />
+        </view>
+        <view class="sg__calibration-field">
+          <text class="sg__calibration-label">身高 cm</text>
+          <input class="sg__calibration-input" type="digit" value="{{heightCm}}" placeholder="例如 168" bindinput="onHeightInput" />
+        </view>
+        <view class="sg__calibration-field">
+          <text class="sg__calibration-label">体重 kg</text>
+          <input class="sg__calibration-input" type="digit" value="{{weightKg}}" placeholder="例如 58" bindinput="onWeightInput" />
+        </view>
+      </view>
+      <view class="sg__gender-row">
+        <text class="sg__calibration-label">模型轮廓</text>
+        <view class="sg__gender-choice {{gender === 'female' ? 'is-selected' : ''}}" data-value="female" bindtap="onGenderSelect">女性轮廓</view>
+        <view class="sg__gender-choice {{gender === 'male' ? 'is-selected' : ''}}" data-value="male" bindtap="onGenderSelect">男性轮廓</view>
+      </view>
+      <text class="sg__calibration-note">轮廓仅用于选择身体模型，不用于身份判断。资料仅存本机，扫描时与照片一起发往 Bodygram。</text>
+    </view>
     <view class="sg__consent-points">
-      <text class="sg__consent-point">· 一次只采集一个角度，跟着语音与倒计时完成</text>
-      <text class="sg__consent-point">· 成功提取尺寸后，原始扫描帧将被删除</text>
-      <text class="sg__consent-point">· 画像可随时在“我的”中清除</text>
+      <text class="sg__consent-point">· 正面 A 字站姿，再拍朝画面右侧的侧面</text>
+      <text class="sg__consent-point">· 照片经 ECS 发给 Bodygram；成功后本地照片立即删除</text>
+      <text class="sg__consent-point">· Bodygram 会保留测量记录；清除画像时我们也请求其删除</text>
     </view>
     <view class="sg__btn-primary" bindtap="onAgree" hover-class="btn-press">开始采集</view>
     <view class="sg__btn-plain" bindtap="onCancel" hover-class="tap-dim">暂不建立</view>
@@ -29,10 +52,11 @@
         class="sg__camera"
         device-position="front"
         flash="off"
+        resolution="high"
         binderror="onCameraError"
       ></camera>
       <view wx:else class="sg__camera-placeholder">
-        <text class="sg__camera-tip">当前环境无法调用相机，将使用模拟采集演示流程</text>
+        <text class="sg__camera-tip">相机不可用。本次不会模拟采集；请在支持相机的小程序真机中重试。</text>
       </view>
 
       <!-- 轮廓引导 -->
@@ -49,7 +73,7 @@
     </view>
 
     <text class="sg__guide">
-      {{state === 'front' ? '请正对屏幕站立，双臂自然，保持不动' : '请慢慢侧身站立，保持不动'}}
+      {{state === 'front' ? '全身入镜，双脚与肩同宽，双臂张开约 30°' : '朝画面右侧转身，双脚并拢，双臂贴近身体'}}
     </text>
     <text class="sg__guide-sub">倒计时结束后自动采集当前画面</text>
   </block>

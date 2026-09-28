@@ -1,0 +1,67 @@
+<view class="wellbeing-page">
+  <view class="nav" style="padding-top: {{layout.statusBarHeight}}px; height: {{layout.navContentHeight}}px;">
+    <view class="nav__back" bindtap="onBack">‹</view><text class="nav__title">猫猫状态室</text><view class="nav__space"></view>
+  </view>
+
+  <view wx:if="{{phase === 'intro'}}" class="intro panel-in">
+    <text class="eyebrow">TWO-WEEK CHECK-IN</text>
+    <text class="intro__title">先不急着给状态命名</text>
+    <text class="intro__desc">五个问题帮助你整理过去两周的心理幸福感。它不是医学诊断，也不会根据脸或声音判断健康。</text>
+    <view class="intro__cat-wrap"><image class="intro__cat" src="/assets/cats/wellbeing-mist-cloud.webp" mode="aspectFit" /></view>
+    <view class="primary" bindtap="onStart">开始整理</view>
+    <text class="intro__note">大约 1 分钟 · 结果仅供自我观察</text>
+  </view>
+
+  <view wx:elif="{{phase === 'questions'}}" class="question panel-in">
+    <view class="progress"><view class="progress__fill" style="width: {{(step + 1) * 20}}%;"></view></view>
+    <text class="eyebrow">{{step + 1}} / 5 · 过去两周</text>
+    <text class="question__title">{{questions[step].text}}</text>
+    <view class="options">
+      <view wx:for="{{options}}" wx:key="value" class="option" data-value="{{item.value}}" bindtap="onAnswer" hover-class="option--pressed">
+        <text>{{item.label}}</text><text class="option__value">{{item.value}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:elif="{{phase === 'context'}}" class="context panel-in">
+    <text class="eyebrow">可能的影响因素</text>
+    <text class="context__title">最近什么最消耗你？</text>
+    <text class="context__desc">可选 0–3 项。这里记录的是你的感受，不会替你判断原因。</text>
+    <view class="chips">
+      <view wx:for="{{contributors}}" wx:key="key" class="chip {{item.selected ? 'is-selected' : ''}}" data-key="{{item.key}}" bindtap="onToggleContributor">{{item.label}}</view>
+    </view>
+    <view class="safety">
+      <text class="safety__title">安全确认</text>
+      <text class="safety__desc">此刻你是否有伤害自己或他人的念头、计划，或感到自己可能马上失控？</text>
+      <view class="safety__choices">
+        <view class="safety__choice {{dangerChoice === 'no' ? 'is-selected' : ''}}" data-value="no" bindtap="onDangerChoice">没有</view>
+        <view class="safety__choice safety__choice--urgent {{dangerChoice === 'yes' ? 'is-selected' : ''}}" data-value="yes" bindtap="onDangerChoice">有 / 不确定</view>
+      </view>
+    </view>
+    <view class="primary {{submitting ? 'is-disabled' : ''}}" bindtap="onSubmit">{{submitting ? '正在整理…' : '生成状态卡'}}</view>
+    <text wx:if="{{errorText}}" class="error">{{errorText}}</text>
+  </view>
+
+  <scroll-view wx:elif="{{phase === 'result'}}" class="result" scroll-y>
+    <view class="result-card result-card--{{result.card.palette}} panel-in">
+      <view class="result-card__halo"></view>
+      <image class="result-card__cat" src="{{result.card.image}}" mode="aspectFit" />
+      <text class="result-card__eyebrow">{{result.card.subtitle}}</text>
+      <text class="result-card__title">{{result.card.title}}</text>
+      <text class="result-card__body">{{result.card.body}}</text>
+      <view class="score"><text class="score__value">{{result.score}}</text><text class="score__unit">/ 100</text></view>
+      <text class="score__label">{{result.state_label}}</text>
+    </view>
+    <view class="result-section">
+      <text class="result-section__title">可能有关</text>
+      <text wx:for="{{result.possible_factors}}" wx:key="*this" class="result-line">· {{item}}</text>
+    </view>
+    <view class="result-section">
+      <text class="result-section__title">现在可以做什么</text>
+      <view wx:for="{{result.next_steps}}" wx:key="*this" class="step-line"><text class="step-line__num">{{index + 1}}</text><text>{{item}}</text></view>
+    </view>
+    <text class="notice">{{result.notice}}</text>
+    <view class="primary" bindtap="onFinish">收进图鉴并返回魔镜</view>
+    <view class="result__safe"></view>
+  </scroll-view>
+</view>

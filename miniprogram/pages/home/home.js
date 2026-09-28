@@ -1,108 +1,116 @@
-// 首页 — 试衣准备空间。
-// 状态机：loading | empty | ready | error
-// 结构：顶部（避让胶囊）→ 主舞台（全区域可点）→ 上下文内容带 → 唯一主动作。
 const api = require('../../services/api.js');
-const format = require('../../utils/format.js');
 
 const app = getApp();
 
 Page({
   data: {
     layout: null,
-    reduceMotion: false,
-    status: 'loading',
-    errorTitle: '',
-    errorDesc: '',
-    recent: null,              // { garmentName, updatedText, resultImage }
-    lastTryonText: '还没有试穿记录',
-    wardrobeThumbs: [],
-    wardrobeCount: 0,
-    profileLine: '',
-    ctaText: '进入镜前',
-    demoGarment: { name: '', image: '' }
+    ready: false,
+    conversationId: '',
+    greeting: '',
+    suggestions: [],
+    messages: [],
+    inputValue: '',
+    sending: false,
+    introVisible: true,
+    scrollAnchor: '',
+    faceAvailable: true,
+    errorText: ''
   },
 
   onLoad() {
+    this.setData({ layout: app.globalData.layout });
+    this.startMirror();
+  },
+
+  startMirror() {
+    this.setData({ ready: false, errorText: '' });
+    app.ensureLogin()
+      .then(() => Promise.all([api.getMirrorBootstrap(), api.createMirrorConversation()]))
+      .then(([bootstrap, conversation]) => {
+        this.setData({
+          ready: true,
+          conversationId: conversation.id,
+          greeting: bootstrap.greeting,
+          suggestions: bootstrap.suggestions || [],
+          faceAvailable: bootstrap.face_test_available_today,
+          messages: [{ id: 'welcome', role: 'mirror', content: bootstrap.greeting }],
+          scrollAnchor: 'message-welcome'
+        });
+      })
+      .catch((error) => {
+        const info = api.explainError(error, 'mirror');
+        this.setData({ errorText: info.desc || info.title });
+      });
+  },
+
+  onInput(e) { this.setData({ inputValue: e.detail.value }); },
+
+  onSuggestion(e) {
+    const content = e.currentTarget.dataset.text;
+    this.setData({ inputValue: content, introVisible: false });
+    this.send(content);
+  },
+
+  onSend() { this.send(this.data.inputValue); },
+
+  send(rawContent) {
+    const content = String(rawContent || '').trim();
+    if (!content || this.data.sending || !this.data.conversationId) return;
+    const userId = 'user-' + Date.now();
     this.setData({
-      layout: app.globalData.layout,
-      reduceMotion: app.globalData.reduceMotion
+      messages: this.data.messages.concat([{ id: userId, role: 'user', content }]),
+      inputValue: '',
+      sending: true,
+      introVisible: false,
+      scrollAnchor: 'message-' + userId
     });
-  },
-
-  onShow() {
-    this.load();
-  },
-
-  // 404 视为空态而非错误
-  tolerate404(promise, fallback) {
-    return promise.catch((err) => {
-      if (err && err.status === 404) return fallback;
-      throw err;
-    });
-  },
-
-  load() {
-    this.setData({ status: 'loading' });
-    Promise.all([
-      this.tolerate404(api.getRecentExperience(), null),
-      this.tolerate404(api.listWardrobeGarments(), { garments: [] }),
-      this.tolerate404(api.getFitProfile(), null),
-      this.tolerate404(api.listCatalogGarments(), { garments: [] })
-    ]).then((results) => {
-      const recent = results[0];
-      const wardrobe = results[1].garments || [];
-      const profile = results[2];
-      const catalog = results[3].garments || [];
-      const demo = catalog[0] || {};
-
-      const next = {
-        wardrobeThumbs: wardrobe.slice(0, 3).map((g) => ({ id: g.id, image: g.image_url })),
-        wardrobeCount: wardrobe.length,
-        profileLine: profile ? '尺寸画像已建立 · 可查看尺码差异' : '需要比较尺码时再建立，不影响试穿',
-        demoGarment: { name: demo.name || '示例衣服', image: demo.image_url || '' }
-      };
-
-      if (recent) {
-        const timeText = format.relativeTime(recent.updated_at);
-        next.status = 'ready';
-        next.recent = {
-          garmentName: recent.garment_name,
-          updatedText: timeText,
-          resultImage: recent.result_image
+    api.sendMirrorMessage(this.data.conversationId, content)
+      .then((result) => {
+        const item = { id: result.message_id, role: 'mirror', content: result.reply };
+        this.setData({
+          messages: this.data.messages.concat([item]),
+          sending: false,
+          scrollAnchor: 'message-' + item.id
+        });
+        this.dispatchAction(result.action || {});
+      })
+      .catch((error) => {
+        const info = api.explainError(error, 'mirror');
+        const item = {
+          id: 'error-' + Date.now(),
+          role: 'system',
+          content: info.desc || '魔镜暂时没有听清，请稍后再试。'
         };
-        next.lastTryonText = recent.garment_name + ' · ' + timeText;
-        next.ctaText = '进入镜前';
-      } else {
-        next.status = 'empty';
-        next.recent = null;
-        next.lastTryonText = '还没有试穿记录';
-        next.ctaText = '开始第一次试穿';
-      }
-      this.setData(next);
-    }).catch((err) => {
-      const info = api.explainError(err, 'home');
-      this.setData({ status: 'error', errorTitle: info.title, errorDesc: info.desc });
-    });
+        this.setData({
+          messages: this.data.messages.concat([item]),
+          sending: false,
+          scrollAnchor: 'message-' + item.id
+        });
+      });
   },
 
-  enterStudio() {
-    wx.navigateTo({ url: '/pages/studio/studio' });
+  dispatchAction(action) {
+    const type = action.type;
+    const payload = action.payload || {};
+    if (type === 'start_wellbeing') {
+      wx.navigateTo({ url: '/pages/wellbeing/wellbeing' });
+    } else if (type === 'open_tryon' || type === 'show_garments') {
+      wx.setStorageSync('cat_mirror_selected_garments', payload.garment_ids || []);
+      if (payload.scene) wx.setStorageSync('cat_mirror_scene', payload.scene);
+      wx.switchTab({ url: '/pages/studio/studio' });
+    } else if (type === 'open_wardrobe') {
+      wx.switchTab({ url: '/pages/studio/studio' });
+    } else if (type === 'open_atlas') {
+      wx.switchTab({ url: '/pages/atlas/atlas' });
+    } else if (type === 'start_fun_face') {
+      if (this.data.faceAvailable) wx.navigateTo({ url: '/pages/fun-face/fun-face' });
+      else wx.showToast({ title: '今天已经照过啦', icon: 'none' });
+    }
   },
 
-  // 主舞台“更换衣服”：进入镜前并聚焦衣服轨道
-  onStageChange() {
-    wx.navigateTo({ url: '/pages/studio/studio' });
-  },
-
-  onAddGarment() {
-    wx.navigateTo({ url: '/pages/studio/studio?add=1' });
-  },
-
-  goProfile() {
-    wx.navigateTo({ url: '/pages/profile/profile' });
-  },
-
-  onRetry() {
-    this.load();
-  }
+  onDismissIntro() { this.setData({ introVisible: false }); },
+  onOpenWellbeing() { wx.navigateTo({ url: '/pages/wellbeing/wellbeing' }); },
+  onOpenTryon() { wx.switchTab({ url: '/pages/studio/studio' }); },
+  onOpenAtlas() { wx.switchTab({ url: '/pages/atlas/atlas' }); }
 });

@@ -100,7 +100,7 @@
     </view>
 
     <view class="footer" style="padding-bottom: {{layout.safeBottom + 24}}px;">
-      <text class="footer__text">Taste Yourself · 线上试衣空间</text>
+      <text class="footer__text">猫猫魔镜 · CATOPTRIC STUDIO</text>
     </view>
   </scroll-view>
 </view>

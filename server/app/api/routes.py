@@ -20,8 +20,6 @@ from fastapi.responses import FileResponse
 
 from app.catalog import (
     GARMENTS,
-    demo_fit_request,
-    fit_request_for_measurements,
     get_catalog_garment_path,
     get_garment,
 )
@@ -31,6 +29,7 @@ from app.domain.experience import (
     BodyScanCreate,
     BodyScanFrame,
     BodyScanResult,
+    BodyScanStats,
     CatalogGarment,
     ExperienceSession,
     ExperienceSessionCreate,
@@ -224,16 +223,19 @@ def get_capabilities(request: Request) -> CapabilitySnapshot:
         "Decart 实时 WebRTC 试衣已配置；仍需微信真机验证相机授权与实时回传。",
         "当前未配置 Decart 实时流，动态试衣不可用，不会切换为录制后生成。",
     )
-    sizing_state = "demo" if measurement.state == "demo" else "partial"
+    sizing_state = "unavailable" if measurement.state == "unavailable" else "partial"
     sizing = CapabilityItem(
         key="size_analysis",
         label="尺码差异",
         state=sizing_state,
         provider="fit-engine-v1",
         notice=(
-            "当前使用固定测试画像；用户衣橱支持录入逐 SKU 成衣尺寸表。"
-            if sizing_state == "demo"
-            else "人体尺寸 Provider 已配置；用户衣橱可录入逐 SKU 成衣尺寸，仍需精度验收。"
+            "需要配置真实尺寸测量服务；未提供示例人体或商品尺码数据。"
+            if sizing_state == "unavailable"
+            else (
+                "按真实身体测量值对比用户录入的逐 SKU 成衣尺寸；不排序、不推荐，"
+                "模型误差需实测校验。"
+            )
         ),
     )
     items = [
@@ -280,8 +282,20 @@ def wechat_login(payload: WechatLoginRequest, request: Request) -> AuthResponse:
 def delete_my_data(
     payload: DeleteMyDataRequest,
     privacy: PrivacyService = Depends(get_privacy_service),
+    profiles: FitProfileRepository = Depends(get_fit_profile_repository),
+    body_provider: BodyScanProvider = Depends(get_body_scan_provider),
     current_user: str = Depends(get_current_user),
 ) -> dict[str, str | dict[str, int]]:
+    profile = profiles.get(current_user)
+    provider_scan_id = profile.get("provider_scan_id") if profile else None
+    delete_scan = getattr(body_provider, "delete_scan", None)
+    if provider_scan_id and delete_scan:
+        try:
+            delete_scan(provider_scan_id)
+        except httpx.HTTPError as error:
+            raise HTTPException(
+                status_code=503, detail="external_body_scan_deletion_failed"
+            ) from error
     return {"status": "deleted", "deleted": privacy.delete_user_data(current_user)}
 
 
@@ -508,12 +522,6 @@ async def create_realtime_client_token(
     return {"apiKey": client_key, "expiresAt": str(token.get("expiresAt", ""))}
 
 
-@router.get("/catalog/garments/{garment_id}/fit-demo", response_model=FitAnalysisResponse)
-def analyze_demo_garment(garment_id: str) -> FitAnalysisResponse:
-    require_garment(garment_id)
-    return analyzer.analyze(demo_fit_request(garment_id))
-
-
 @router.get("/catalog/garments/{garment_id}/fit-analysis", response_model=FitAnalysisResponse)
 @router.get("/garments/{garment_id}/fit-analysis", response_model=FitAnalysisResponse)
 def analyze_garment_for_current_user(
@@ -530,23 +538,17 @@ def analyze_garment_for_current_user(
     if uploaded is not None:
         if uploaded.user_id != current_user:
             raise HTTPException(status_code=404, detail="garment_not_found")
-        product = wardrobe.get_size_chart(garment_id, current_user)
-        if product is None:
-            raise HTTPException(status_code=404, detail="product_size_chart_not_found")
-        request = FitAnalysisRequest(
-            profile=UserFitProfile(
-                user_id=current_user,
-                preference=FitPreference.REGULAR,
-                measurements=BodyMeasurements.model_validate(profile["measurements_cm"]),
-            ),
-            product=product,
-        )
-    else:
-        request = fit_request_for_measurements(
-            garment_id,
-            current_user,
-            profile["measurements_cm"],
-        )
+    product = wardrobe.get_size_chart(garment_id, current_user)
+    if product is None:
+        raise HTTPException(status_code=404, detail="product_size_chart_not_found")
+    request = FitAnalysisRequest(
+        profile=UserFitProfile(
+            user_id=current_user,
+            preference=FitPreference.REGULAR,
+            measurements=BodyMeasurements.model_validate(profile["measurements_cm"]),
+        ),
+        product=product,
+    )
     return analyzer.analyze(request).model_copy(
         update={
             "profile_source": profile["provider"],
@@ -567,13 +569,19 @@ def save_wardrobe_size_chart(
     current_user: str = Depends(get_current_user),
 ) -> ProductFitData:
     garment = repository.get_garment(garment_id)
-    if garment is None or garment.user_id != current_user:
+    catalog_garment = get_garment(garment_id)
+    if garment is not None:
+        if garment.user_id != current_user:
+            raise HTTPException(status_code=404, detail="garment_not_found")
+        category = {
+            "tops": GarmentCategory.TOP,
+            "bottoms": GarmentCategory.BOTTOM,
+            "one-pieces": GarmentCategory.DRESS,
+        }[garment.category]
+    elif catalog_garment is not None:
+        category = GarmentCategory(catalog_garment.category)
+    else:
         raise HTTPException(status_code=404, detail="garment_not_found")
-    category = {
-        "tops": GarmentCategory.TOP,
-        "bottoms": GarmentCategory.BOTTOM,
-        "one-pieces": GarmentCategory.DRESS,
-    }[garment.category]
     product = ProductFitData(
         product_id=garment_id,
         brand=payload.brand,
@@ -594,7 +602,10 @@ def get_wardrobe_size_chart(
     current_user: str = Depends(get_current_user),
 ) -> ProductFitData:
     garment = repository.get_garment(garment_id)
-    if garment is None or garment.user_id != current_user:
+    catalog_garment = get_garment(garment_id)
+    if garment is not None and garment.user_id != current_user:
+        raise HTTPException(status_code=404, detail="garment_not_found")
+    if garment is None and catalog_garment is None:
         raise HTTPException(status_code=404, detail="garment_not_found")
     product = repository.get_size_chart(garment_id, current_user)
     if product is None:
@@ -605,8 +616,19 @@ def get_wardrobe_size_chart(
 @router.delete("/me/fit-profile")
 def delete_fit_profile(
     profiles: FitProfileRepository = Depends(get_fit_profile_repository),
+    body_provider: BodyScanProvider = Depends(get_body_scan_provider),
     current_user: str = Depends(get_current_user),
 ) -> dict[str, int | str]:
+    profile = profiles.get(current_user)
+    provider_scan_id = profile.get("provider_scan_id") if profile else None
+    delete_scan = getattr(body_provider, "delete_scan", None)
+    if provider_scan_id and delete_scan:
+        try:
+            delete_scan(provider_scan_id)
+        except httpx.HTTPError as error:
+            raise HTTPException(
+                status_code=503, detail="external_body_scan_deletion_failed"
+            ) from error
     return {"status": "deleted", "deleted": profiles.delete(current_user)}
 
 
@@ -618,6 +640,7 @@ def get_fit_profile(
     profile = profiles.get(current_user)
     if profile is None:
         raise HTTPException(status_code=404, detail="fit_profile_not_found")
+    profile.pop("provider_scan_id", None)
     return profile
 
 
@@ -631,6 +654,8 @@ def create_body_scan(
 ) -> BodyScanResult:
     if not payload.consented:
         raise HTTPException(status_code=422, detail="explicit_consent_required")
+    if provider.name in {"disabled", "mock"}:
+        raise HTTPException(status_code=503, detail="body_measurement_unavailable")
     require_session_owner(repository.get(payload.experience_session_id), current_user)
     return scans.create(current_user, payload.experience_session_id, provider.name)
 
@@ -641,6 +666,7 @@ async def upload_body_scan_frame(
     angle: Literal["front", "side", "back"] = Form(),
     image: UploadFile = File(),
     scans: BodyScanRepository = Depends(get_body_scan_repository),
+    provider: BodyScanProvider = Depends(get_body_scan_provider),
     storage: LocalImageStorage = Depends(get_image_storage),
     content_safety: ContentSafetyProvider = Depends(get_content_safety_provider),
     current_user: str = Depends(get_current_user),
@@ -654,6 +680,13 @@ async def upload_body_scan_frame(
     if stored.height <= stored.width or stored.height < 480:
         storage.delete(stored.relative_path)
         raise HTTPException(status_code=422, detail="body_scan_frame_must_be_full_length_portrait")
+    if provider.name == "bodygram-platform":
+        normalize_frame = provider.normalize_frame
+        try:
+            normalize_frame(storage.root / stored.relative_path)
+        except ValueError as error:
+            storage.delete(stored.relative_path)
+            raise HTTPException(status_code=422, detail=str(error)) from error
     require_safe_image(content_safety, storage, stored.relative_path, "body_scan")
     scans.add_frame(scan_id, angle, stored.relative_path)
     return BodyScanFrame(angle=angle, image_path=stored.relative_path)
@@ -662,6 +695,7 @@ async def upload_body_scan_frame(
 @router.post("/body-scans/{scan_id}/complete", response_model=BodyScanResult)
 def complete_body_scan(
     scan_id: str,
+    payload: BodyScanStats,
     scans: BodyScanRepository = Depends(get_body_scan_repository),
     provider: BodyScanProvider = Depends(get_body_scan_provider),
     storage: LocalImageStorage = Depends(get_image_storage),
@@ -678,6 +712,7 @@ def complete_body_scan(
             scan_id,
             experience_session_id,
             scans.frames(scan_id, storage.root),
+            payload.model_dump(),
         )
     except (httpx.HTTPError, OSError, ValueError) as error:
         scans.set_status(scan_id, "failed")
@@ -686,16 +721,54 @@ def complete_body_scan(
         raise HTTPException(status_code=503, detail="body_measurement_unavailable") from error
     scans.set_status(scan_id, result.status)
     if result.status == "completed":
+        previous = profiles.get(current_user)
+        previous_provider_scan_id = (
+            previous.get("provider_scan_id") if previous else None
+        )
+        delete_scan = getattr(provider, "delete_scan", None)
+        if previous_provider_scan_id and delete_scan:
+            try:
+                delete_scan(previous_provider_scan_id)
+            except httpx.HTTPError as error:
+                if result.provider_scan_id:
+                    try:
+                        delete_scan(result.provider_scan_id)
+                    except httpx.HTTPError:
+                        pass
+                scans.set_status(scan_id, "failed")
+                for relative_path in scans.delete_frames(scan_id):
+                    storage.delete(relative_path)
+                raise HTTPException(
+                    status_code=503, detail="external_body_scan_deletion_failed"
+                ) from error
         profiles.save(
             current_user,
             scan_id,
             result.provider,
             result.measurements_cm,
             result.measurement_uncertainty_cm,
+            result.provider_scan_id,
         )
         for relative_path in scans.delete_frames(scan_id):
             storage.delete(relative_path)
+    elif result.status == "failed":
+        for relative_path in scans.delete_frames(scan_id):
+            storage.delete(relative_path)
     return result
+
+
+@router.delete("/body-scans/{scan_id}")
+def cancel_body_scan(
+    scan_id: str,
+    scans: BodyScanRepository = Depends(get_body_scan_repository),
+    storage: LocalImageStorage = Depends(get_image_storage),
+    current_user: str = Depends(get_current_user),
+) -> dict[str, str]:
+    if scans.get_owner(scan_id) != current_user:
+        raise HTTPException(status_code=404, detail="body_scan_not_found")
+    for relative_path in scans.delete(scan_id):
+        storage.delete(relative_path)
+    return {"status": "deleted"}
 
 
 @router.post(

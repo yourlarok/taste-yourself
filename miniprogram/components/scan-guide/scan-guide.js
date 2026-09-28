@@ -15,7 +15,8 @@ Component({
     retakeSide: { type: String, value: 'side' },   // 需要补拍的角度：front | side
     failTitle: { type: String, value: '扫描未完成' },
     failDesc: { type: String, value: '' },
-    processingStep: { type: Number, value: 0 }     // 0 上传 1 检查画面 2 计算尺寸 3 完成
+    processingStep: { type: Number, value: 0 },    // 0 上传 1 检查画面 2 计算尺寸 3 完成
+    initialStats: { type: Object, value: {} }
   },
 
   data: {
@@ -23,7 +24,11 @@ Component({
     cameraOk: true,
     steps: ['上传画面', '检查画面', '计算尺寸', '完成'],
     stepIndex: 0,
-    capturing: false
+    capturing: false,
+    age: '',
+    gender: '',
+    heightCm: '',
+    weightKg: ''
   },
 
   observers: {
@@ -32,6 +37,7 @@ Component({
         this.teardown();
         return;
       }
+      if (state === 'consent') this.setData({ cameraOk: true });
       if (state === 'front' || state === 'side') {
         this.startCaptureCountdown(state);
       } else {
@@ -43,6 +49,14 @@ Component({
     },
     processingStep(i) {
       this.setData({ stepIndex: i });
+    },
+    initialStats(stats) {
+      this.setData({
+        age: stats && stats.age ? String(stats.age) : '',
+        gender: stats && stats.gender ? stats.gender : '',
+        heightCm: stats && stats.height_cm ? String(stats.height_cm) : '',
+        weightKg: stats && stats.weight_kg ? String(stats.weight_kg) : ''
+      });
     }
   },
 
@@ -64,6 +78,10 @@ Component({
     /* ---- 倒计时采集 ---- */
     startCaptureCountdown(side) {
       this.clearCountdown();
+      if (!this.data.cameraOk) {
+        this.triggerEvent('cameraerror');
+        return;
+      }
       this.setData({ countdown: 3, capturing: false });
       this.playVoice(side);
       this.vibrate('light');
@@ -145,7 +163,26 @@ Component({
     },
 
     /* ---- 交互事件 ---- */
-    onAgree() { this.triggerEvent('agree'); },
+    onAgeInput(e) { this.setData({ age: e.detail.value }); },
+    onHeightInput(e) { this.setData({ heightCm: e.detail.value }); },
+    onWeightInput(e) { this.setData({ weightKg: e.detail.value }); },
+    onGenderSelect(e) { this.setData({ gender: e.currentTarget.dataset.value }); },
+    onAgree() {
+      const stats = {
+        age: Number(this.data.age),
+        gender: this.data.gender,
+        height_cm: Number(this.data.heightCm),
+        weight_kg: Number(this.data.weightKg)
+      };
+      if (!Number.isInteger(stats.age) || stats.age < 18 || stats.age > 100 ||
+          !['male', 'female'].includes(stats.gender) ||
+          stats.height_cm < 100 || stats.height_cm > 230 ||
+          stats.weight_kg <= 25 || stats.weight_kg > 250) {
+        wx.showToast({ title: '请补全有效的校准资料', icon: 'none' });
+        return;
+      }
+      this.triggerEvent('agree', stats);
+    },
     onCancel() { this.stopVoice(); this.triggerEvent('cancel'); },
     onRetake() { this.triggerEvent('retake', { side: this.data.retakeSide }); },
     onRetry() { this.triggerEvent('retry'); },

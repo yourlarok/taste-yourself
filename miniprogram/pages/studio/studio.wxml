@@ -136,6 +136,7 @@
     fail-title="{{scanFailTitle}}"
     fail-desc="{{scanFailDesc}}"
     processing-step="{{processingStep}}"
+    initial-stats="{{scanStats}}"
     bindagree="onScanAgree"
     bindcancel="onScanCancel"
     bindcaptured="onScanCaptured"
@@ -143,5 +144,6 @@
     bindretry="onScanRetry"
     bindfinish="onScanFinish"
     bindbackground="onScanBackground"
+    bindcameraerror="onScanCameraError"
   />
 </view>

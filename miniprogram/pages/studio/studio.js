@@ -84,6 +84,7 @@ Page({
     scanFailTitle: '',
     scanFailDesc: '',
     processingStep: 0,
+    scanStats: wx.getStorageSync('body_scan_stats') || {},
     // realtime
     realtimeState: 'idle',
     realtimeProgressText: ''
@@ -114,6 +115,17 @@ Page({
 
   onShow() {
     this.setData({ showCamera: this.data.phase !== 'result' && this.data.cameraAuth === 'ok' });
+    const mirrorGarmentIds = wx.getStorageSync('cat_mirror_selected_garments') || [];
+    if (mirrorGarmentIds.length) {
+      wx.removeStorageSync('cat_mirror_selected_garments');
+      this._pendingMirrorGarmentId = mirrorGarmentIds[0];
+      const available = this.data.catalog.concat(this.data.wardrobe);
+      const selected = available.find((item) => item.id === this._pendingMirrorGarmentId);
+      if (selected) {
+        this._pendingMirrorGarmentId = '';
+        this.onSelectGarment({ detail: { id: selected.id } });
+      }
+    }
     const selectedGarmentId = wx.getStorageSync('ty_live_selected_garment');
     if (!selectedGarmentId) return;
     wx.removeStorageSync('ty_live_selected_garment');
@@ -153,10 +165,19 @@ Page({
           wardrobe,
           selectedGarmentId: first ? first.id : '',
           selectedGarmentName: first ? first.name : '',
-          selectedGarmentEditable: !!(first && first.source === 'wardrobe'),
+          selectedGarmentEditable: !!first,
           banner: { show: false, title: '', desc: '', actionText: '' }
         });
         this.prepareCamera();
+        if (this._pendingMirrorGarmentId) {
+          const requested = catalog.concat(wardrobe).find(
+            (item) => item.id === this._pendingMirrorGarmentId
+          );
+          if (requested) {
+            this._pendingMirrorGarmentId = '';
+            this.onSelectGarment({ detail: { id: requested.id } });
+          }
+        }
         if (this._pendingAdd) {
           this._pendingAdd = false;
           this.onAddGarment();
@@ -257,7 +278,7 @@ Page({
     this.patch({
       selectedGarmentId: g.id,
       selectedGarmentName: g.name,
-      selectedGarmentEditable: g.source === 'wardrobe',
+      selectedGarmentEditable: true,
       quotaUsed: false,
       quotaHint: ''
     });
@@ -512,9 +533,9 @@ Page({
           fitState: 'ready',
           fitRows: this.buildFitRows(res.rows || []),
           fitSourceText:
-            '数据来源：' + (res.source || '商家公开尺码表') +
-            ' · 测量误差约 ' + (res.error_margin || '±1.5cm') +
-            '。轮廓扫描存在个体差异，结果仅反映测量时刻的状态；余量为“成衣尺寸 − 身体尺寸”，区间仅为常见参考范围。'
+          '数据来源：' + (res.source || '身体扫描估算') +
+            ' · ' + (res.error_margin || '服务商未提供逐项误差值') +
+            '。余量为“成衣尺寸 − 身体尺寸”；参考区间仅描述常见穿着空间，不是尺码推荐。'
         });
       })
       .catch((err) => {
@@ -579,13 +600,16 @@ Page({
   /* ================= 尺寸画像采集 ================= */
 
   onStartScan() {
-    this.setData({ fitVisible: false, fitState: 'idle', scanVisible: true, scanState: 'consent' });
+    this.setData({ fitVisible: false, fitState: 'idle', scanVisible: true, scanState: 'consent', scanStats: wx.getStorageSync('body_scan_stats') || {} });
   },
 
-  onScanAgree() {
+  onScanAgree(e) {
+    const stats = e.detail;
     api.createBodyScan(this.data.sessionId)
       .then((s) => {
         this._scanId = s.id;
+        this._scanStats = stats;
+        wx.setStorageSync('body_scan_stats', stats);
         this.setData({ scanState: 'front' });
       })
       .catch((err) => {
@@ -619,7 +643,7 @@ Page({
   finishScan() {
     this.setData({ scanState: 'processing', processingStep: 0 });
     setTimeout(() => this.setData({ processingStep: 1 }), 700);
-    api.completeBodyScan(this._scanId)
+    api.completeBodyScan(this._scanId, this._scanStats)
       .then(() => {
         this.setData({ processingStep: 2 });
         setTimeout(() => {
@@ -645,7 +669,14 @@ Page({
   },
 
   onScanRetry() {
+    if (this._scanId) api.cancelBodyScan(this._scanId).catch(() => {});
+    this._scanId = '';
+    this._scanStats = null;
     this.setData({ scanState: 'consent' });
+  },
+
+  onScanCameraError() {
+    this.setData({ scanState: 'failed', scanFailTitle: '无法使用相机', scanFailDesc: '请在微信小程序真机中开启相机权限后重试。本次不会生成模拟尺寸。' });
   },
 
   onScanFinish() {
@@ -657,6 +688,9 @@ Page({
   onScanCancel() {
     const st = this.data.scanState;
     const close = () => {
+      if (this._scanId && st !== 'completed') api.cancelBodyScan(this._scanId).catch(() => {});
+      this._scanId = '';
+      this._scanStats = null;
       // 回到原试穿上下文：衣服、结果、抽屉状态都不受影响
       this.setData({ scanVisible: false, scanState: 'consent', fitVisible: true, fitState: 'profile_required' });
     };
@@ -678,6 +712,11 @@ Page({
   onScanBackground() {
     // 页面切后台：终止扫描计时器，回到试穿上下文
     if (this.data.scanVisible) {
+      if (this._scanId && this.data.scanState !== 'completed') {
+        api.cancelBodyScan(this._scanId).catch(() => {});
+        this._scanId = '';
+        this._scanStats = null;
+      }
       this.setData({ scanVisible: false, scanState: 'consent' });
       wx.showToast({ title: '扫描已中断，可重新开始', icon: 'none' });
     }
@@ -716,8 +755,10 @@ Page({
     wx.setStorageSync('ty_live_bootstrap', {
       sessionId: this.data.sessionId,
       selectedGarmentId: this.data.selectedGarmentId,
+      scene: wx.getStorageSync('cat_mirror_scene') || '',
       garments
     });
+    wx.removeStorageSync('cat_mirror_scene');
     wx.navigateTo({
       url: '/pages/realtime/realtime',
       fail: (error) => {

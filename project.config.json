@@ -1,5 +1,5 @@
 {
-  "description": "Taste Yourself 微信小程序",
+  "description": "猫猫魔镜微信小程序",
   "miniprogramRoot": "miniprogram/",
   "setting": {
     "es6": true,
@@ -28,7 +28,7 @@
   },
   "compileType": "miniprogram",
   "appid": "wxb1749021b07a12e4",
-  "projectname": "taste-yourself",
+  "projectname": "猫猫魔镜",
   "simulatorPluginLibVersion": {},
   "packOptions": {
     "ignore": [],

@@ -42,7 +42,12 @@ class BodyScanRepository:
                 """
             )
 
-    def create(self, user_id: str, experience_session_id: str, provider: str) -> BodyScanResult:
+    def create(
+        self,
+        user_id: str,
+        experience_session_id: str,
+        provider: str,
+    ) -> BodyScanResult:
         scan_id = str(uuid4())
         now = datetime.now(UTC).isoformat()
         with self._connect() as connection:
@@ -108,10 +113,20 @@ class BodyScanRepository:
                 (status, datetime.now(UTC).isoformat(), scan_id),
             )
 
+
     def delete_frames(self, scan_id: str) -> list[str]:
         with self._connect() as connection:
             rows = connection.execute(
                 "SELECT image_path FROM body_scan_frames WHERE scan_id = ?", (scan_id,)
             ).fetchall()
             connection.execute("DELETE FROM body_scan_frames WHERE scan_id = ?", (scan_id,))
+        return [str(row["image_path"]) for row in rows]
+
+    def delete(self, scan_id: str) -> list[str]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT image_path FROM body_scan_frames WHERE scan_id = ?", (scan_id,)
+            ).fetchall()
+            connection.execute("DELETE FROM body_scan_frames WHERE scan_id = ?", (scan_id,))
+            connection.execute("DELETE FROM body_scans WHERE id = ?", (scan_id,))
         return [str(row["image_path"]) for row in rows]

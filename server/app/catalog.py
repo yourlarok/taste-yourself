@@ -1,15 +1,6 @@
 from pathlib import Path
 
 from app.domain.experience import CatalogGarment
-from app.domain.models import (
-    BodyMeasurements,
-    FitAnalysisRequest,
-    FitPreference,
-    GarmentCategory,
-    GarmentVariant,
-    ProductFitData,
-    UserFitProfile,
-)
 
 GARMENTS = [
     CatalogGarment(
@@ -52,58 +43,3 @@ def get_catalog_garment_path(garment_id: str) -> Path | None:
         return None
     target = Path(__file__).parent / "assets" / "garments" / f"{garment.id}.webp"
     return target if target.is_file() else None
-
-
-def demo_fit_request(garment_id: str) -> FitAnalysisRequest:
-    garment = get_garment(garment_id)
-    category = (
-        GarmentCategory.OUTERWEAR
-        if garment and garment.category == "outerwear"
-        else GarmentCategory.TOP
-    )
-    base = 102 if category == GarmentCategory.OUTERWEAR else 94
-    return FitAnalysisRequest(
-        profile=UserFitProfile(
-            user_id="dev-user",
-            preference=FitPreference.REGULAR,
-            measurements=BodyMeasurements(chest_cm=92),
-        ),
-        product=ProductFitData(
-            product_id=garment.product_id if garment else "unknown",
-            category=category,
-            variants=[
-                GarmentVariant(
-                    sku_id=f"{garment_id}-m",
-                    size_label="M",
-                    measurements_cm={"chest_cm": base},
-                ),
-                GarmentVariant(
-                    sku_id=f"{garment_id}-l",
-                    size_label="L",
-                    measurements_cm={"chest_cm": base + 6},
-                ),
-                GarmentVariant(
-                    sku_id=f"{garment_id}-xl",
-                    size_label="XL",
-                    measurements_cm={"chest_cm": base + 14},
-                ),
-            ],
-        ),
-    )
-
-
-def fit_request_for_measurements(
-    garment_id: str,
-    user_id: str,
-    measurements_cm: dict[str, float],
-) -> FitAnalysisRequest:
-    request = demo_fit_request(garment_id)
-    return request.model_copy(
-        update={
-            "profile": UserFitProfile(
-                user_id=user_id,
-                preference=FitPreference.REGULAR,
-                measurements=BodyMeasurements.model_validate(measurements_cm),
-            )
-        }
-    )

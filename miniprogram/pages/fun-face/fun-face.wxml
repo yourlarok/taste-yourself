@@ -1,0 +1,25 @@
+<view class="face-page">
+  <view class="nav" style="padding-top: {{layout.statusBarHeight}}px; height: {{layout.navContentHeight}}px;"><view class="nav__back" bindtap="onBack">‹</view><text>每日趣味镜卡</text><view class="nav__space"></view></view>
+  <view wx:if="{{phase === 'intro'}}" class="intro fade-in">
+    <text class="eyebrow">ONE CARD A DAY</text><text class="title">让镜面记录<br/>今天的光</text><text class="desc">三项自述加一张当下照片。模型只读取表情力度、光线、构图和风格清晰度，不从脸推断人格、运势、健康或身份。</text>
+    <view class="sigil"><image src="/assets/cats/wellbeing-sun-orange.webp" mode="aspectFit" /></view>
+    <view class="primary" bindtap="onStart">我已了解，开始</view><text class="privacy">照片经服务器发送至视觉模型，生成结果后立即删除；每天限一次。</text>
+  </view>
+  <view wx:elif="{{phase === 'used'}}" class="used fade-in"><image src="/assets/cats/wellbeing-moon-tuxedo.webp" mode="aspectFit" /><text class="title">今天的镜卡已经出现</text><text class="desc">一天只保留一次当下的光。明天再来看看新的你。</text><view class="primary" bindtap="onFinish">回到魔镜</view></view>
+  <view wx:elif="{{phase === 'questions'}}" class="question fade-in">
+    <view class="progress"><view style="width: {{(step + 1) * 33.34}}%;"></view></view><text class="eyebrow">{{step + 1}} / 3</text><text class="question__title">{{questions[step].text}}</text>
+    <view class="scale-labels"><text>{{questions[step].left_label}}</text><text>{{questions[step].right_label}}</text></view>
+    <view class="scale"><view wx:for="{{scale}}" wx:key="*this" data-value="{{item}}" bindtap="onAnswer" hover-class="scale__point--pressed" class="scale__point"><text>{{index + 1}}</text></view></view>
+    <text class="scale__hint">选择此刻更接近的位置</text>
+  </view>
+  <view wx:elif="{{phase === 'camera'}}" class="camera-stage fade-in">
+    <camera wx:if="{{cameraAvailable}}" class="camera" device-position="front" flash="off" resolution="high" binderror="onCameraError"></camera><view wx:else class="camera camera--empty">相机不可用</view>
+    <view class="guide-oval"></view><view class="camera-copy"><text>自然看向镜面</text><text>保持脸部清晰，避免强逆光</text></view><view class="shutter {{submitting ? 'is-disabled' : ''}}" bindtap="onCapture"><view></view></view><text wx:if="{{errorText}}" class="error">{{errorText}}</text>
+  </view>
+  <view wx:elif="{{phase === 'processing'}}" class="processing"><view class="rune">✦</view><text>魔镜正在整理画面线索</text><text class="processing__sub">照片将在分析后删除</text></view>
+  <scroll-view wx:elif="{{phase === 'result'}}" class="result" scroll-y>
+    <view class="card card--{{result.card.palette}}"><image class="card__cat" src="{{result.card.image}}" mode="aspectFit"/><text class="card__eyebrow">{{result.card.subtitle}}</text><text class="card__title">{{result.card.title}}</text><text class="card__score">{{result.overall_score}}</text><text class="card__body">{{result.card.body}}</text></view>
+    <view class="dimensions"><view wx:for="{{dimensions}}" wx:key="name" class="dimension"><view class="dimension__head"><text>{{item.name}}</text><text>{{item.value}}</text></view><view class="dimension__track"><view style="width: {{item.value}}%;"></view></view></view></view>
+    <view class="observations"><text class="section-title">镜面只看到了</text><text wx:for="{{result.observations}}" wx:key="*this">· {{item}}</text></view><text class="explanation">{{result.explanation}}</text><text class="notice">{{result.notice}}</text><view class="primary" bindtap="onFinish">收进图鉴</view><view class="safe"></view>
+  </scroll-view>
+</view>

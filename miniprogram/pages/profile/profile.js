@@ -102,6 +102,7 @@ Page({
         if (!res.confirm) return;
         api.deleteFitProfile()
           .then(() => {
+            wx.removeStorageSync('body_scan_stats');
             wx.showToast({ title: '已清除', icon: 'success' });
             this.load();
           })
@@ -140,6 +141,7 @@ Page({
     this.setData({ deleting: true });
     api.deleteAllData()
       .then(() => {
+        wx.removeStorageSync('body_scan_stats');
         this.setData({ deleting: false });
         wx.showToast({ title: '已全部删除', icon: 'success' });
         this.load();

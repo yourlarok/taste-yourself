@@ -67,8 +67,20 @@
   line-height: 1.6;
 }
 
+.sg__calibration { margin-top: var(--s4); padding: 20rpx; border: 1rpx solid rgba(255,255,255,.14); border-radius: 18rpx; background: rgba(255,255,255,.035); }
+.sg__calibration-title { color: rgba(255,255,255,.88); font-size: var(--f-s); }
+.sg__calibration-row { display: flex; gap: 12rpx; margin-top: 14rpx; }
+.sg__calibration-field { flex: 1; min-width: 0; }
+.sg__calibration-label { display: block; color: rgba(255,255,255,.55); font-size: var(--f-xs); }
+.sg__calibration-input { height: 70rpx; margin-top: 5rpx; padding: 0 14rpx; border-radius: 10rpx; background: rgba(255,255,255,.09); color: #fff; font-size: var(--f-s); }
+.sg__gender-row { display: flex; align-items: center; gap: 12rpx; margin-top: 14rpx; }
+.sg__gender-row .sg__calibration-label { margin-right: auto; }
+.sg__gender-choice { padding: 12rpx 20rpx; border: 1rpx solid rgba(255,255,255,.18); border-radius: 99rpx; color: rgba(255,255,255,.7); font-size: var(--f-xs); }
+.sg__gender-choice.is-selected { border-color: #e4d0b2; color: #f5e6d0; background: rgba(228,208,178,.1); }
+.sg__calibration-note { display: block; margin-top: 12rpx; color: rgba(255,255,255,.48); font-size: 20rpx; line-height: 1.5; }
+
 .sg__consent-points {
-  margin-top: var(--s5);
+  margin-top: var(--s3);
   display: flex;
   flex-direction: column;
 }

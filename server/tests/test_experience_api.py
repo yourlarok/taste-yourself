@@ -49,39 +49,19 @@ def test_devtools_vertical_slice(tmp_path: Path, monkeypatch):
         assert selected.json()["garment_id"] == "denim-blue"
 
         analysis = client.get("/api/v1/catalog/garments/denim-blue/fit-demo")
-        assert analysis.status_code == 200
-        assert len(analysis.json()["variants"]) == 3
-        assert "recommended_size" not in analysis.json()
+        assert analysis.status_code == 404
 
         scan = client.post(
             "/api/v1/body-scans",
             json={"experience_session_id": session_id, "consented": True},
         )
-        assert scan.status_code == 201
-        assert scan.json()["provider"] == "mock"
-        assert scan.json()["status"] == "created"
-        scan_id = scan.json()["id"]
-
-        for angle in ("front", "side"):
-            frame = client.post(
-                f"/api/v1/body-scans/{scan_id}/frames",
-                data={"angle": angle},
-                files={"image": (f"{angle}.jpg", scan_frame(), "image/jpeg")},
-            )
-            assert frame.status_code == 200
-
-        completed = client.post(f"/api/v1/body-scans/{scan_id}/complete")
-        assert completed.status_code == 200
-        assert completed.json()["status"] == "completed"
-        assert completed.json()["measurements_cm"]["chest_cm"] == 92.0
-        assert not list((tmp_path / "media" / "scans" / scan_id).glob("*.jpg"))
+        assert scan.status_code == 503
+        assert scan.json()["detail"] == "body_measurement_unavailable"
 
         personal_analysis = client.get(
             "/api/v1/catalog/garments/denim-blue/fit-analysis"
         )
-        assert personal_analysis.status_code == 200
-        assert personal_analysis.json()["profile_source"] == "mock"
-        assert personal_analysis.json()["variants"][0]["reasons"][0]["body_cm"] == 92.0
+        assert personal_analysis.status_code == 409
 
 
         uploaded = client.post(
@@ -93,8 +73,8 @@ def test_devtools_vertical_slice(tmp_path: Path, monkeypatch):
         uploaded_id = uploaded.json()["id"]
 
         missing_chart = client.get(f"/api/v1/garments/{uploaded_id}/fit-analysis")
-        assert missing_chart.status_code == 404
-        assert missing_chart.json()["detail"] == "product_size_chart_not_found"
+        assert missing_chart.status_code == 409
+        assert missing_chart.json()["detail"] == "fit_profile_required"
 
         chart = client.put(
             f"/api/v1/wardrobe/garments/{uploaded_id}/size-chart",
@@ -120,15 +100,11 @@ def test_devtools_vertical_slice(tmp_path: Path, monkeypatch):
         assert chart.json()["category"] == "top"
 
         uploaded_analysis = client.get(f"/api/v1/garments/{uploaded_id}/fit-analysis")
-        assert uploaded_analysis.status_code == 200
-        assert [row["size_label"] for row in uploaded_analysis.json()["variants"]] == [
-            "M",
-            "L",
-        ]
-        assert "recommended_size" not in uploaded_analysis.json()
+        assert uploaded_analysis.status_code == 409
+        assert uploaded_analysis.json()["detail"] == "fit_profile_required"
 
         cleared = client.delete("/api/v1/me/fit-profile")
-        assert cleared.json()["deleted"] == 1
+        assert cleared.json()["deleted"] == 0
         assert (
             client.get("/api/v1/catalog/garments/denim-blue/fit-analysis").status_code
             == 409

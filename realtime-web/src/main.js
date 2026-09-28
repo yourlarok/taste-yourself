@@ -22,6 +22,24 @@ let localStream;
 let selectedId = bootstrap.selectedGarmentId || '';
 let connecting = false;
 
+const SCENE_PROMPTS = {
+  beach: 'a bright natural seaside with pale sand, blue water, and realistic coastal daylight',
+  city: 'a refined contemporary city street with realistic daylight',
+  cafe: 'an elegant warm cafe interior with natural window light',
+  garden: 'a lush quiet garden with soft natural daylight',
+  studio: 'a minimal premium fashion studio with soft editorial lighting',
+  snow: 'a realistic snowy outdoor setting with soft winter daylight',
+  sunset: 'an open outdoor setting during a warm natural sunset'
+};
+
+function tryonPrompt(garment) {
+  const scene = SCENE_PROMPTS[bootstrap.scene];
+  const background = scene
+    ? `Replace the background with ${scene}, with coherent lighting and perspective.`
+    : `Preserve the original background.`;
+  return `A person wearing the garment in the reference image: ${garment.name || 'selected garment'}. Preserve the person's identity, body shape, and pose. ${background}`;
+}
+
 function message(text, detail, failed = false) {
   title.textContent = text;
   copy.textContent = detail || '';
@@ -81,7 +99,7 @@ async function setGarment(garment) {
   renderGarments();
   if (!client) return;
   try {
-    await client.set({ image: garment.image_url, prompt: `A person wearing the garment in the reference image: ${garment.name || 'selected garment'}. Preserve the person's identity, body shape, pose, and background.` });
+    await client.set({ image: garment.image_url, prompt: tryonPrompt(garment) });
   } catch (error) {
     message('衣服切换失败', '实时连接已保留，请重试切换或结束本次试穿。', true);
   }
@@ -123,7 +141,7 @@ async function connect() {
       },
       initialState: {
         image: garment.image_url,
-        prompt: { text: `A person wearing the garment in the reference image: ${garment.name || 'selected garment'}. Preserve the person's identity, body shape, pose, and background.`, enhance: false }
+        prompt: { text: tryonPrompt(garment), enhance: false }
       }
     });
     client.on('connectionChange', (state) => {

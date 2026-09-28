@@ -61,7 +61,7 @@ def test_fit_analysis_endpoint(tmp_path: Path, monkeypatch):
 def test_capabilities_report_runtime_provider_state(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "test.db"))
     monkeypatch.setenv("TRYON_PROVIDER", "mock")
-    monkeypatch.setenv("BODY_SCAN_PROVIDER", "mock")
+    monkeypatch.setenv("BODY_SCAN_PROVIDER", "disabled")
     monkeypatch.setenv("REALTIME_PROVIDER", "disabled")
 
     with TestClient(app) as client:
@@ -74,7 +74,7 @@ def test_capabilities_report_runtime_provider_state(tmp_path: Path, monkeypatch)
     assert states == {
         "wardrobe": "ready",
         "static_tryon": "demo",
-        "size_analysis": "demo",
-        "body_measurement": "demo",
+        "size_analysis": "unavailable",
+        "body_measurement": "unavailable",
         "realtime_tryon": "unavailable",
     }

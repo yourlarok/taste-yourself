@@ -1,6 +1,9 @@
 {
   "pages": [
     "pages/home/home",
+    "pages/wellbeing/wellbeing",
+    "pages/fun-face/fun-face",
+    "pages/atlas/atlas",
     "pages/studio/studio",
     "pages/realtime/realtime",
     "pages/profile/profile"
@@ -10,9 +13,21 @@
     "backgroundColor": "#FAF7F1",
     "backgroundTextStyle": "dark"
   },
+  "tabBar": {
+    "color": "#8C8797",
+    "selectedColor": "#E8C988",
+    "backgroundColor": "#11101A",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/home/home", "text": "魔镜" },
+      { "pagePath": "pages/studio/studio", "text": "试衣间" },
+      { "pagePath": "pages/atlas/atlas", "text": "图鉴" },
+      { "pagePath": "pages/profile/profile", "text": "我的" }
+    ]
+  },
   "permission": {
     "scope.camera": {
-      "desc": "用于实时试衣镜取景，并在你同意后将画面实时发送至试衣模型处理"
+      "desc": "用于魔镜趣味卡、尺寸采集与实时试衣；画面仅在你主动启用相应功能后处理"
     }
   },
   "style": "v2",

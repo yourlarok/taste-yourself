@@ -25,12 +25,21 @@ class FitProfileRepository:
                   user_id TEXT PRIMARY KEY,
                   source_scan_id TEXT NOT NULL,
                   provider TEXT NOT NULL,
+                  provider_scan_id TEXT,
                   measurements_json TEXT NOT NULL,
                   uncertainty_json TEXT NOT NULL,
                   updated_at TEXT NOT NULL
                 )
                 """
             )
+            columns = {
+                str(row[1])
+                for row in connection.execute("PRAGMA table_info(user_fit_profiles)")
+            }
+            if "provider_scan_id" not in columns:
+                connection.execute(
+                    "ALTER TABLE user_fit_profiles ADD COLUMN provider_scan_id TEXT"
+                )
 
     def save(
         self,
@@ -39,17 +48,19 @@ class FitProfileRepository:
         provider: str,
         measurements_cm: dict[str, float],
         uncertainty_cm: dict[str, float],
+        provider_scan_id: str | None = None,
     ) -> None:
         with self._connect() as connection:
             connection.execute(
                 """
                 INSERT INTO user_fit_profiles (
-                  user_id, source_scan_id, provider, measurements_json,
+                  user_id, source_scan_id, provider, provider_scan_id, measurements_json,
                   uncertainty_json, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(user_id) DO UPDATE SET
                   source_scan_id = excluded.source_scan_id,
                   provider = excluded.provider,
+                  provider_scan_id = excluded.provider_scan_id,
                   measurements_json = excluded.measurements_json,
                   uncertainty_json = excluded.uncertainty_json,
                   updated_at = excluded.updated_at
@@ -58,6 +69,7 @@ class FitProfileRepository:
                     user_id,
                     source_scan_id,
                     provider,
+                    provider_scan_id,
                     json.dumps(measurements_cm, ensure_ascii=False),
                     json.dumps(uncertainty_cm, ensure_ascii=False),
                     datetime.now(UTC).isoformat(),
@@ -75,6 +87,7 @@ class FitProfileRepository:
             "user_id": str(row["user_id"]),
             "source_scan_id": str(row["source_scan_id"]),
             "provider": str(row["provider"]),
+            "provider_scan_id": row["provider_scan_id"],
             "measurements_cm": json.loads(row["measurements_json"]),
             "measurement_uncertainty_cm": json.loads(row["uncertainty_json"]),
             "updated_at": str(row["updated_at"]),

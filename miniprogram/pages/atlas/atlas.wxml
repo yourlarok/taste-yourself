@@ -1,0 +1,13 @@
+<view class="atlas-page">
+  <view class="atlas-nav" style="padding-top: {{layout.statusBarHeight}}px; height: {{layout.navContentHeight}}px;"><view><text class="atlas-nav__eyebrow">THE FAMILIAR ARCHIVE</text><text class="atlas-nav__title">猫猫图鉴</text></view><text class="atlas-nav__count">{{cards.length}}</text></view>
+  <view wx:if="{{loading}}" class="atlas-state">正在翻开图鉴…</view>
+  <view wx:elif="{{errorText}}" class="atlas-state">{{errorText}}</view>
+  <view wx:elif="{{!cards.length}}" class="atlas-empty">
+    <view class="atlas-empty__mirror">✦</view><text class="atlas-empty__title">还没有猫猫来访</text><text class="atlas-empty__desc">和魔镜做一次状态整理或趣味镜卡，遇见的猫猫会被收进这里。</text><view class="atlas-empty__action" bindtap="onOpenMirror">去找魔镜</view>
+  </view>
+  <view wx:else class="atlas-grid">
+    <view wx:for="{{cards}}" wx:key="id" class="card card--{{item.palette}}">
+      <text class="card__family">{{item.family === 'wellbeing' ? '状态猫' : '镜面猫'}}</text><image class="card__cat" src="{{item.image}}" mode="aspectFit" /><text class="card__name">{{item.cat_type}}</text><text class="card__title">{{item.title}}</text><text class="card__date">{{item.collected_at}}</text>
+    </view>
+  </view>
+</view>

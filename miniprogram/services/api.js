@@ -165,7 +165,7 @@ function normalizeGarmentList(response, source) {
 
 function uncertaintyText(values) {
   const nums = Object.keys(values || {}).map((key) => Number(values[key])).filter((n) => Number.isFinite(n));
-  return nums.length ? ('±' + Math.max.apply(null, nums).toFixed(1) + 'cm') : '±1.5cm';
+  return nums.length ? ('±' + Math.max.apply(null, nums).toFixed(1) + 'cm') : '服务商未提供逐项误差值';
 }
 
 const METRIC_LABELS = {
@@ -249,15 +249,30 @@ const api = {
     '/api/v1/experience-sessions/' + sessionId + '/realtime/client-token',
     {}
   ),
-  getFitProfile: () => useMock()
-    ? mock.getFitProfile()
-    : request('GET', '/api/v1/me/fit-profile').then((r) => Object.assign({}, r, {
+  getMirrorBootstrap: () => request('GET', '/api/v1/mirror/bootstrap'),
+  createMirrorConversation: () => request('POST', '/api/v1/mirror/conversations', {}),
+  sendMirrorMessage: (conversationId, content) => request(
+    'POST',
+    '/api/v1/mirror/conversations/' + conversationId + '/messages',
+    { content }
+  ),
+  getWellbeingQuestions: () => request('GET', '/api/v1/mirror/wellbeing/questions'),
+  submitWellbeing: (payload) => request('POST', '/api/v1/mirror/wellbeing/assessments', payload),
+  getFunFaceQuestions: () => request('GET', '/api/v1/mirror/fun-face/questions'),
+  submitFunFace: (filePath, answers) => uploadFile(
+    '/api/v1/mirror/fun-face/assessments',
+    filePath,
+    'image',
+    { answers_json: JSON.stringify(answers) }
+  ),
+  listCatCards: () => request('GET', '/api/v1/mirror/cards'),
+  getFitProfile: () => request('GET', '/api/v1/me/fit-profile').then((r) => Object.assign({}, r, {
         created_at: r.created_at || r.updated_at,
         source: r.source || r.provider,
         error_margin: r.error_margin || uncertaintyText(r.measurement_uncertainty_cm),
         measurements: r.measurements || r.measurements_cm
       })),
-  deleteFitProfile: () => useMock() ? mock.deleteFitProfile() : request('DELETE', '/api/v1/me/fit-profile'),
+  deleteFitProfile: () => request('DELETE', '/api/v1/me/fit-profile'),
   deleteAllData: () => useMock()
     ? mock.deleteAllData()
     : request('DELETE', '/api/v1/me/data', { confirmation: 'DELETE' }),
@@ -288,9 +303,7 @@ const api = {
         });
       }),
 
-  getFitAnalysis: (garmentId) => useMock()
-    ? mock.getFitAnalysis(garmentId)
-    : request('GET', '/api/v1/garments/' + garmentId + '/fit-analysis').then(normalizeFit),
+  getFitAnalysis: (garmentId) => request('GET', '/api/v1/garments/' + garmentId + '/fit-analysis').then(normalizeFit),
   getGarmentSizeChart: (garmentId) => useMock()
     ? Promise.reject(new ApiError(404, '演示衣服不支持修改尺码表', 'DEMO_ONLY'))
     : request('GET', '/api/v1/wardrobe/garments/' + garmentId + '/size-chart'),
@@ -298,15 +311,10 @@ const api = {
     ? Promise.reject(new ApiError(409, '请切换真实后端后录入尺码表', 'DEMO_ONLY'))
     : request('PUT', '/api/v1/wardrobe/garments/' + garmentId + '/size-chart', chart),
 
-  createBodyScan: (sessionId) => useMock()
-    ? mock.createBodyScan(sessionId)
-    : request('POST', '/api/v1/body-scans', { experience_session_id: sessionId, consented: true }),
-  uploadScanFrame: (scanId, filePath, side) => useMock()
-    ? mock.uploadScanFrame(scanId, filePath, side)
-    : uploadFile('/api/v1/body-scans/' + scanId + '/frames', filePath, 'image', { angle: side }),
-  completeBodyScan: (scanId) => useMock()
-    ? mock.completeBodyScan(scanId)
-    : request('POST', '/api/v1/body-scans/' + scanId + '/complete'),
+  createBodyScan: (sessionId) => request('POST', '/api/v1/body-scans', { experience_session_id: sessionId, consented: true }),
+  uploadScanFrame: (scanId, filePath, side) => uploadFile('/api/v1/body-scans/' + scanId + '/frames', filePath, 'image', { angle: side }),
+  completeBodyScan: (scanId, stats) => request('POST', '/api/v1/body-scans/' + scanId + '/complete', stats),
+  cancelBodyScan: (scanId) => request('DELETE', '/api/v1/body-scans/' + scanId),
 
 };
 

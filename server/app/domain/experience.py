@@ -62,6 +62,13 @@ class BodyScanCreate(BaseModel):
     consented: bool
 
 
+class BodyScanStats(BaseModel):
+    age: int = Field(ge=18, le=100)
+    gender: Literal["male", "female"]
+    height_cm: float = Field(ge=100, le=230)
+    weight_kg: float = Field(gt=25, le=250)
+
+
 class BodyScanResult(BaseModel):
     id: str
     experience_session_id: str
@@ -72,6 +79,7 @@ class BodyScanResult(BaseModel):
     captured_angles: list[str] = Field(default_factory=list)
     required_angles: list[str] = Field(default_factory=lambda: ["front", "side"])
     notice: str
+    provider_scan_id: str | None = Field(default=None, exclude=True)
 
 
 class BodyScanFrame(BaseModel):
