@@ -213,7 +213,7 @@ function getCapabilities() {
       { key: 'static_tryon', label: '试穿照', state: 'demo', provider: 'mock', notice: '当前展示预置演示结果，未调用真实换装模型。' },
       { key: 'size_analysis', label: '尺码差异', state: 'demo', provider: 'fit-engine-v1', notice: '当前使用示例商品尺码表和固定测试画像；真实模式支持为衣橱衣服录入尺码表。' },
       { key: 'body_measurement', label: '尺寸画像', state: 'demo', provider: 'mock', notice: '当前不依据照片推断真实尺寸。' },
-      { key: 'realtime_tryon', label: '动态试衣', state: 'demo', provider: 'mock', notice: '当前只运行 15 秒交互演示，不生成实时换装流。' }
+      { key: 'realtime_tryon', label: '动态试衣', state: 'unavailable', provider: 'disabled', notice: '演示模式不提供动态试衣；请连接 Decart 实时服务后使用。' }
     ]
   }));
 }

@@ -2,7 +2,7 @@
 
   <!-- 画布层：相机 / 结果图 / 取景占位 -->
   <camera
-    wx:if="{{showCamera && !realtimeHasStream}}"
+    wx:if="{{showCamera}}"
     class="canvas"
     device-position="front"
     flash="off"
@@ -10,30 +10,6 @@
     binderror="onCameraError"
     bindinitdone="onCameraInit"
   ></camera>
-
-  <!-- 真实动态链路：推送相机流，并以服务端换装流覆盖主画布。 -->
-  <live-pusher
-    wx:if="{{realtimeHasStream}}"
-    class="canvas rt-pusher"
-    url="{{realtimePublishUrl}}"
-    mode="RTC"
-    autopush
-    enable-camera
-    enable-mic="{{false}}"
-    beauty="0"
-    whiteness="0"
-    binderror="onRealtimeMediaError"
-  ></live-pusher>
-  <live-player
-    wx:if="{{realtimeHasStream}}"
-    class="canvas rt-player"
-    src="{{realtimePlayUrl}}"
-    mode="RTC"
-    autoplay
-    muted
-    object-fit="fillCrop"
-    binderror="onRealtimeMediaError"
-  ></live-player>
 
   <view wx:if="{{phase === 'result'}}" class="canvas" bindtap="onTapResult">
     <image class="canvas__img" src="{{resultImage}}" mode="aspectFill"></image>
@@ -91,14 +67,8 @@
     />
   </view>
 
-  <!-- 动态试衣倒计时：始终可见 -->
-  <view wx:if="{{realtimeState === 'active'}}" class="rt" style="top: {{layout.navBarHeight + 28}}px;">
-    <text class="rt__num">{{countdown}}</text>
-    <text class="rt__unit">秒</text>
-  </view>
-
   <!-- 结果签名版：编辑式说明牌，含 AI 生成提示 -->
-  <view wx:if="{{phase === 'result' && realtimeState === 'idle'}}" class="plate" style="bottom: {{layout.safeBottom + 312}}px;">
+  <view wx:if="{{phase === 'result' && realtimeState === 'idle'}}" class="plate" style="bottom: {{layout.safeBottom + 312}}px;" bindtap="onTapResult">
     <text class="plate__eyebrow">试穿照 · {{resultKindText}}</text>
     <text class="plate__title">{{selectedGarmentName}}</text>
     <text class="plate__meta">{{resultTimeText}} · 点击画面返回相机</text>
@@ -107,6 +77,7 @@
   <!-- 底部操作层 -->
   <view class="bottom" style="padding-bottom: {{layout.safeBottom + 12}}px;">
     <garment-strip
+      wx:if="{{realtimeState === 'idle'}}"
       catalog="{{catalog}}"
       wardrobe="{{wardrobe}}"
       selected-id="{{selectedGarmentId}}"
@@ -124,10 +95,10 @@
       disabled-hint="{{quotaHint}}"
       generating-text="{{generatingText}}"
       realtime-state="{{realtimeState}}"
+      realtime-progress-text="{{realtimeProgressText}}"
       bindgenerate="onGenerate"
       bindopen-fit="onOpenFit"
       bindstart-realtime="onStartRealtime"
-      bindend-realtime="onEndRealtime"
     />
   </view>
 

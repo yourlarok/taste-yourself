@@ -1,0 +1,15 @@
+{
+  "name": "taste-yourself-live-mirror",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@decartai/sdk": "^0.2.2"
+  },
+  "devDependencies": {
+    "vite": "^6.4.1"
+  }
+}

@@ -60,12 +60,10 @@ def main() -> int:
             failures.append("缺少环境变量 FASHN_WORKER_URL")
         if not os.getenv("FASHN_WORKER_TOKEN"):
             failures.append("缺少环境变量 FASHN_WORKER_TOKEN")
-    if os.getenv("REALTIME_PROVIDER") != "http":
-        failures.append("REALTIME_PROVIDER 必须为 http")
-    if not os.getenv("REALTIME_SESSION_URL"):
-        failures.append("缺少环境变量 REALTIME_SESSION_URL")
-    if not os.getenv("REALTIME_PROVIDER_TOKEN"):
-        failures.append("缺少环境变量 REALTIME_PROVIDER_TOKEN")
+    if os.getenv("REALTIME_PROVIDER") != "decart-realtime":
+        failures.append("REALTIME_PROVIDER must be decart-realtime")
+    if not os.getenv("DECART_API_KEY"):
+        failures.append("Missing DECART_API_KEY")
     if os.getenv("BODY_SCAN_PROVIDER") != "http":
         failures.append("BODY_SCAN_PROVIDER 必须为 http")
     if not os.getenv("BODY_SCAN_WORKER_URL"):

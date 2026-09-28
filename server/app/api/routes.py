@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Literal
 
 import httpx
@@ -34,7 +35,6 @@ from app.domain.experience import (
     ExperienceSession,
     ExperienceSessionCreate,
     GarmentSelection,
-    RealtimeSessionResult,
     RecentExperience,
     StaticTryOnCreate,
     StaticTryOnResult,
@@ -52,7 +52,6 @@ from app.domain.models import (
 from app.domain.wardrobe import GarmentRecord, GarmentSizeChartInput, PersonImageRecord
 from app.providers.body_scan import BodyScanProvider
 from app.providers.content_safety import ContentSafetyProvider
-from app.providers.realtime import RealtimeProvider
 from app.providers.tryon import TryOnProvider
 from app.repositories.body_scans import BodyScanRepository
 from app.repositories.experience import ExperienceRepository
@@ -120,10 +119,6 @@ def get_tryon_provider(request: Request) -> TryOnProvider:
 
 def get_body_scan_provider(request: Request) -> BodyScanProvider:
     return request.app.state.body_scan_provider
-
-
-def get_realtime_provider(request: Request) -> RealtimeProvider:
-    return request.app.state.realtime_provider
 
 
 def get_body_scan_repository(request: Request) -> BodyScanRepository:
@@ -219,9 +214,15 @@ def get_capabilities(request: Request) -> CapabilitySnapshot:
     realtime = _provider_capability(
         "realtime_tryon",
         "动态试衣",
-        request.app.state.realtime_provider.name,
-        "实时中继 Provider 已配置；仍需微信类目权限与真机网络验收。",
-        "当前只验证 15 秒交互与降级流程，不生成实时换装画面。",
+        (
+            "decart-realtime"
+            if request.app.state.decart_api_key
+            and request.app.state.live_mirror_ready
+            and os.getenv("REALTIME_PROVIDER") == "decart-realtime"
+            else "disabled"
+        ),
+        "Decart 实时 WebRTC 试衣已配置；仍需微信真机验证相机授权与实时回传。",
+        "当前未配置 Decart 实时流，动态试衣不可用，不会切换为录制后生成。",
     )
     sizing_state = "demo" if measurement.state == "demo" else "partial"
     sizing = CapabilityItem(
@@ -466,29 +467,45 @@ def generate_static_tryon(
     return result
 
 
-@router.post(
-    "/experience-sessions/{session_id}/realtime",
-    response_model=RealtimeSessionResult,
-)
-def create_realtime_tryon(
+@router.post("/experience-sessions/{session_id}/realtime/client-token")
+async def create_realtime_client_token(
     session_id: str,
     request: Request,
     repository: ExperienceRepository = Depends(get_experience_repository),
-    provider: RealtimeProvider = Depends(get_realtime_provider),
     quotas: QuotaRepository = Depends(get_quota_repository),
     current_user: str = Depends(get_current_user),
-) -> RealtimeSessionResult:
-    session = require_session_owner(repository.get(session_id), current_user)
+) -> dict[str, str]:
+    """Mint a short-lived Decart credential for the embedded live WebRTC mirror."""
+    require_session_owner(repository.get(session_id), current_user)
+    if os.getenv("REALTIME_PROVIDER") != "decart-realtime":
+        raise HTTPException(status_code=503, detail="realtime_tryon_unavailable")
+    api_key = request.app.state.decart_api_key
+    if not api_key or not request.app.state.live_mirror_ready:
+        raise HTTPException(status_code=503, detail="realtime_tryon_unavailable")
     if not quotas.consume(current_user, "realtime", request.app.state.realtime_daily_limit):
         raise HTTPException(status_code=429, detail="realtime_daily_limit_reached")
     try:
-        result = provider.create(session.id, session.garment_id)
-    except (httpx.HTTPError, OSError, ValueError) as error:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.post(
+                "https://api.decart.ai/v1/client/tokens",
+                headers={"x-api-key": api_key},
+                json={
+                    "expiresIn": 300,
+                    "allowedModels": ["lucy-vton-latest"],
+                    "allowedOrigins": [request.app.state.realtime_web_origin],
+                    "constraints": {"realtime": {"maxSessionDuration": 120}},
+                },
+            )
+            response.raise_for_status()
+            token = response.json()
+    except (httpx.HTTPError, ValueError) as error:
         quotas.refund(current_user, "realtime")
         raise HTTPException(status_code=503, detail="realtime_tryon_unavailable") from error
-    if result.status != "ready":
+    client_key = token.get("apiKey")
+    if not client_key:
         quotas.refund(current_user, "realtime")
-    return result
+        raise HTTPException(status_code=502, detail="realtime_token_invalid_response")
+    return {"apiKey": client_key, "expiresAt": str(token.get("expiresAt", ""))}
 
 
 @router.get("/catalog/garments/{garment_id}/fit-demo", response_model=FitAnalysisResponse)

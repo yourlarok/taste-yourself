@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#211b14" />
+    <title>试衣空间</title>
+    <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+  </head>
+  <body>
+    <main id="mirror" class="mirror mirror--starting">
+      <video id="output" autoplay playsinline></video>
+      <div class="veil" id="veil">
+        <div class="spinner"></div>
+        <div class="veil-title" id="state-title">正在连接实时试衣镜</div>
+        <div class="veil-copy" id="state-copy">相机画面将实时传输至 Decart 生成换装影像</div>
+        <button class="retry" id="retry" hidden>重新连接</button>
+      </div>
+      <header class="topbar">
+        <button class="icon-button" id="back" aria-label="返回">‹</button>
+        <div class="topcopy">
+          <div class="eyebrow">TRY-ON STUDIO</div>
+          <div class="garment-name" id="garment-name">实时试衣镜</div>
+        </div>
+        <div class="live-status" id="live-status"><i></i><span>连接中</span></div>
+      </header>
+      <footer class="dock">
+        <div class="privacy-note">实时影像用于试衣处理 · 退出即断开</div>
+        <div class="garment-rail" id="garment-rail"></div>
+        <button class="exit-button" id="exit">结束实时试穿</button>
+      </footer>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

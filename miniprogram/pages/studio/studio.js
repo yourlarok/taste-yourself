@@ -7,7 +7,6 @@
 const api = require('../../services/api.js');
 
 const app = getApp();
-const REALTIME_SECONDS = 15;
 
 // 由 phase / cameraAuth / quotaUsed 派生的渲染状态（避免在 WXML 写复杂表达式）
 function derive(d) {
@@ -87,10 +86,7 @@ Page({
     processingStep: 0,
     // realtime
     realtimeState: 'idle',
-    countdown: REALTIME_SECONDS,
-    realtimePublishUrl: '',
-    realtimePlayUrl: '',
-    realtimeHasStream: false
+    realtimeProgressText: ''
   },
 
   patch(obj) {
@@ -103,7 +99,7 @@ Page({
   onLoad(options) {
     this._pendingAdd = !!(options && options.add === '1');
     this._scanId = '';
-    this._rtTimer = null;
+    this._cameraContext = null;
     this.setData({
       layout: app.globalData.layout,
       reduceMotion: app.globalData.reduceMotion
@@ -116,8 +112,16 @@ Page({
     this.stopRealtimeSession(true);
   },
 
+  onShow() {
+    this.setData({ showCamera: this.data.phase !== 'result' && this.data.cameraAuth === 'ok' });
+    const selectedGarmentId = wx.getStorageSync('ty_live_selected_garment');
+    if (!selectedGarmentId) return;
+    wx.removeStorageSync('ty_live_selected_garment');
+    this.onSelectGarment({ detail: { id: selectedGarmentId } });
+  },
+
   onUnload() {
-    this.clearRtTimer();
+    this.stopRealtimeSession();
   },
 
   /* ================= 初始化 ================= */
@@ -428,6 +432,18 @@ Page({
       .catch(() => wx.showToast({ title: '保存失败，可截屏保存', icon: 'none' }));
   },
 
+  saveVideo(src) {
+    const save = (filePath) => wx.saveVideoToPhotosAlbum({
+      filePath,
+      success: () => wx.showToast({ title: '\u5df2\u4fdd\u5b58\u5230\u76f8\u518c', icon: 'success' }),
+      fail: () => wx.showToast({ title: '\u89c6\u9891\u4fdd\u5b58\u5931\u8d25', icon: 'none' })
+    });
+    if (!/^https?:\/\//.test(src)) return save(src);
+    wx.downloadFile({ url: src, success: (result) => save(result.tempFilePath), fail: () => {
+      wx.showToast({ title: '\u89c6\u9891\u4e0b\u8f7d\u5931\u8d25', icon: 'none' });
+    } });
+  },
+
   resolveLocalFile(src) {
     return new Promise((resolve, reject) => {
       if (/^https?:\/\//.test(src)) {
@@ -667,112 +683,63 @@ Page({
     }
   },
 
-  /* ================= 15 秒动态试衣 ================= */
+  /* ================= 实时 WebRTC 试衣镜 ================= */
 
   onStartRealtime() {
-    wx.showModal({
-      title: '动态试衣 · 15 秒',
-      content: '这是一段 15 秒的可选体验，会消耗较多流量；随时可以提前结束。',
-      confirmText: '开始',
-      cancelText: '取消',
-      success: (res) => {
-        if (res.confirm) this.connectRealtime();
+    this.hideBanner();
+    if (!this.data.sessionId) return;
+    if (!wx.getStorageSync('ty_live_privacy_accepted')) {
+      wx.showModal({
+        title: '开启实时试衣镜',
+        content: '实时相机画面会传输至 Decart 进行换装处理，可能消耗服务额度；离开页面会立即断开。是否继续？',
+        confirmText: '继续开启',
+        cancelText: '暂不开启',
+        success: (result) => {
+          if (result.confirm) {
+            wx.setStorageSync('ty_live_privacy_accepted', true);
+            this.launchRealtimeMirror();
+          }
+        }
+      });
+      return;
+    }
+    this.launchRealtimeMirror();
+  },
+
+  launchRealtimeMirror() {
+    this.setData({ showCamera: false });
+    const garments = this.data.catalog.concat(this.data.wardrobe).map((item) => ({
+      id: item.id,
+      name: item.name,
+      image_url: item.image_url
+    }));
+    wx.setStorageSync('ty_live_bootstrap', {
+      sessionId: this.data.sessionId,
+      selectedGarmentId: this.data.selectedGarmentId,
+      garments
+    });
+    wx.navigateTo({
+      url: '/pages/realtime/realtime',
+      fail: (error) => {
+        wx.removeStorageSync('ty_live_bootstrap');
+        this.showBanner(new api.ApiError(0, error.errMsg || '\u65e0\u6cd5\u6253\u5f00\u5b9e\u65f6\u8bd5\u7a7f\u9875\u9762', 'REALTIME_PAGE'), 'realtime');
       }
     });
   },
 
-  connectRealtime() {
-    this.hideBanner();
-    this.setData({
-      realtimeState: 'connecting',
-      countdown: REALTIME_SECONDS,
-      realtimePublishUrl: '',
-      realtimePlayUrl: '',
-      realtimeHasStream: false
-    });
-    api.startRealtime(this.data.sessionId)
-      .then((r) => {
-        if (r && r.status === 'unavailable') {
-          throw new api.ApiError(503, r.notice || '动态试衣服务暂不可用', 'REALTIME_UNAVAILABLE');
-        }
-        const total = (r && r.duration) || REALTIME_SECONDS;
-        const publishUrl = (r && r.publish_url) || '';
-        const playUrl = (r && r.play_url) || '';
-        this.setData({
-          realtimeState: 'active',
-          countdown: Math.min(total, REALTIME_SECONDS),
-          realtimePublishUrl: publishUrl,
-          realtimePlayUrl: playUrl,
-          realtimeHasStream: !!(publishUrl && playUrl)
-        });
-        this.clearRtTimer();
-        this._rtTimer = setInterval(() => {
-          const left = this.data.countdown - 1;
-          if (left <= 0) {
-            this.stopRealtimeSession(false);
-          } else {
-            this.setData({ countdown: left });
-          }
-        }, 1000);
-      })
-      .catch((err) => {
-        // 失败不清空衣服、静态结果与尺码分析上下文
-        this.setData({ realtimeState: 'idle' });
-        this.showBanner(err, 'realtime');
-      });
-  },
-
-  onRealtimeMediaError(e) {
-    if (this.data.realtimeState !== 'active' && this.data.realtimeState !== 'connecting') return;
-    const detail = e && e.detail ? e.detail : {};
-    this.clearRtTimer();
-    this.setData({
-      realtimeState: 'idle',
-      countdown: REALTIME_SECONDS,
-      realtimePublishUrl: '',
-      realtimePlayUrl: '',
-      realtimeHasStream: false
-    });
-    this.showBanner(
-      new api.ApiError(503, detail.errMsg || '动态画面连接中断', 'REALTIME_MEDIA_ERROR'),
-      'realtime'
-    );
-  },
-
-  onEndRealtime() {
-    if (this.data.realtimeState === 'active') {
-      this.stopRealtimeSession(false);
+  onReturnFromRealtime(e) {
+    const detail = e && e.detail && e.detail.data;
+    const messages = Array.isArray(detail) ? detail : [detail];
+    const result = messages.filter(Boolean).pop();
+    if (result && result.selectedGarmentId && result.selectedGarmentId !== this.data.selectedGarmentId) {
+      this.onSelectGarment({ detail: { id: result.selectedGarmentId } });
     }
   },
 
-  stopRealtimeSession(silent) {
-    const st = this.data.realtimeState;
-    if (st === 'idle') return;
-    this.clearRtTimer();
-    const sessionId = this.data.sessionId;
-    this.setData({ realtimeState: silent ? 'idle' : 'ending' });
-    api.stopRealtime(sessionId)
-      .catch(() => {})
-      .then(() => {
-        this.setData({
-          realtimeState: 'idle',
-          countdown: REALTIME_SECONDS,
-          realtimePublishUrl: '',
-          realtimePlayUrl: '',
-          realtimeHasStream: false,
-          statusLine: this.data.phase === 'result' ? statusLineOf('result') : statusLineOf('camera')
-        });
-      });
+  stopRealtimeSession() {
+    this._cameraContext = null;
+    if (this.data.realtimeState !== 'idle') this.setData({ realtimeState: 'idle' });
   },
-
-  clearRtTimer() {
-    if (this._rtTimer) {
-      clearInterval(this._rtTimer);
-      this._rtTimer = null;
-    }
-  },
-
-  /* ================= 其他 ================= */
 
   onBack() {
     wx.navigateBack({ fail: () => wx.reLaunch({ url: '/pages/home/home' }) });

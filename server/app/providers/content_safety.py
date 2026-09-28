@@ -46,3 +46,19 @@ class HttpContentSafetyProvider:
         if data.get("action") not in {"allow", "reject"}:
             raise ValueError("content_safety_returned_invalid_action")
         return data["action"] == "allow"
+
+    def is_allowed_video(self, video_path: Path, scene: str) -> bool:
+        headers = {"X-Worker-Token": self.token} if self.token else {}
+        with video_path.open("rb") as video:
+            response = httpx.post(
+                f"{self.base_url}/v1/check-video",
+                headers=headers,
+                files={"video": (video_path.name, video, "video/mp4")},
+                data={"scene": scene},
+                timeout=self.timeout_seconds,
+            )
+        response.raise_for_status()
+        data = response.json()
+        if data.get("action") not in {"allow", "reject"}:
+            raise ValueError("content_safety_returned_invalid_action")
+        return data["action"] == "allow"

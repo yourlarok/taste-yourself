@@ -29,8 +29,35 @@ def test_api_enforces_daily_limits_and_reports_usage(tmp_path: Path, monkeypatch
     monkeypatch.setenv("STATIC_DAILY_LIMIT", "1")
     monkeypatch.setenv("REALTIME_DAILY_LIMIT", "1")
     monkeypatch.setenv("TRYON_PROVIDER", "mock")
+    monkeypatch.setenv("REALTIME_PROVIDER", "decart-realtime")
+    monkeypatch.setenv("DECART_API_KEY", "test-key")
+
+    class TokenResponse:
+        @staticmethod
+        def raise_for_status():
+            return None
+
+        @staticmethod
+        def json():
+            return {"apiKey": "ephemeral"}
+
+    class AsyncClient:
+        def __init__(self, timeout):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def post(self, *_args, **_kwargs):
+            return TokenResponse()
+
+    monkeypatch.setattr("app.api.routes.httpx.AsyncClient", AsyncClient)
 
     with TestClient(app) as client:
+        app.state.live_mirror_ready = True
         session = client.post(
             "/api/v1/experience-sessions", json={"garment_id": "knit-sand"}
         ).json()
@@ -41,10 +68,10 @@ def test_api_enforces_daily_limits_and_reports_usage(tmp_path: Path, monkeypatch
             f"/api/v1/experience-sessions/{session['id']}/static-tryon", json={}
         )
         first_realtime = client.post(
-            f"/api/v1/experience-sessions/{session['id']}/realtime"
+            f"/api/v1/experience-sessions/{session['id']}/realtime/client-token"
         )
         second_realtime = client.post(
-            f"/api/v1/experience-sessions/{session['id']}/realtime"
+            f"/api/v1/experience-sessions/{session['id']}/realtime/client-token"
         )
         usage = client.get("/api/v1/me/usage")
 

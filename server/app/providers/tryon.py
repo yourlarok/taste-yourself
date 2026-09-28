@@ -3,14 +3,13 @@ from __future__ import annotations
 import base64
 import binascii
 import time
-from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
 
 import httpx
 
-from app.domain.experience import RealtimeSessionResult, StaticTryOnResult
+from app.domain.experience import StaticTryOnResult
 from app.services.image_storage import LocalImageStorage
 
 
@@ -25,9 +24,6 @@ class TryOnProvider(Protocol):
         garment_path: Path | None = None,
         category: str = "tops",
     ) -> StaticTryOnResult: ...
-
-    def create_realtime(self, experience_session_id: str) -> RealtimeSessionResult: ...
-
 
 class MockTryOnProvider:
     """Deterministic provider for WeChat DevTools and automated tests."""
@@ -51,18 +47,6 @@ class MockTryOnProvider:
             preview_token=f"mock:{garment_id}",
             notice="开发环境模拟结果；尚未调用真实生成模型。",
         )
-
-    def create_realtime(self, experience_session_id: str) -> RealtimeSessionResult:
-        return RealtimeSessionResult(
-            id=str(uuid4()),
-            experience_session_id=experience_session_id,
-            status="ready",
-            provider=self.name,
-            max_duration_seconds=15,
-            expires_at=datetime.now(UTC) + timedelta(seconds=30),
-            notice="开发环境模拟会话；前端仍严格执行 15 秒上限。",
-        )
-
 
 class FashnHttpTryOnProvider:
     """Calls the self-hosted FASHN GPU worker and stores the generated image locally."""
@@ -122,18 +106,6 @@ class FashnHttpTryOnProvider:
             result_url=f"/api/v1/media/{stored.relative_path}",
             notice="AI 生成试穿效果仅供视觉体验，不代表真实合身或面料物理效果。",
         )
-
-    def create_realtime(self, experience_session_id: str) -> RealtimeSessionResult:
-        return RealtimeSessionResult(
-            id=str(uuid4()),
-            experience_session_id=experience_session_id,
-            status="unavailable",
-            provider=self.name,
-            max_duration_seconds=15,
-            expires_at=datetime.now(UTC) + timedelta(seconds=30),
-            notice="当前开源 FASHN Worker 仅支持静态图像；实时会话尚不可用。",
-        )
-
 
 class FashnApiTryOnProvider:
     """Calls FASHN's hosted API and persists the result in our own media storage."""
@@ -242,17 +214,6 @@ class FashnApiTryOnProvider:
             time.sleep(self.poll_interval_seconds)
 
         raise httpx.TimeoutException("FASHN API job timed out")
-
-    def create_realtime(self, experience_session_id: str) -> RealtimeSessionResult:
-        return RealtimeSessionResult(
-            id=str(uuid4()),
-            experience_session_id=experience_session_id,
-            status="unavailable",
-            provider=self.name,
-            max_duration_seconds=15,
-            expires_at=datetime.now(UTC) + timedelta(seconds=30),
-            notice="当前 FASHN API 提供静态生成；15 秒动态试衣需使用独立的视频服务。",
-        )
 
     @staticmethod
     def _as_data_uri(path: Path) -> str:

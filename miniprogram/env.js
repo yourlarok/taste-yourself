@@ -12,7 +12,7 @@
 //   scan_retake      扫描完成首次返回 422 —— 验收“需要补拍具体角度”态
 module.exports = {
   useMock: false,
-  baseUrl: 'http://127.0.0.1:8000',
+  baseUrl: 'https://tryon.xuefeitryon.com',
   mockScenario: 'normal',
   mockLatency: 500
 };

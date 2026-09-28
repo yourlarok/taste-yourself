@@ -1,7 +1,8 @@
 services:
   api:
     build:
-      context: ./server
+      context: .
+      dockerfile: server/Dockerfile
     restart: unless-stopped
     environment:
       APP_ENV: production
@@ -20,8 +21,8 @@ services:
       PERSON_IMAGE_RETENTION_DAYS: ${PERSON_IMAGE_RETENTION_DAYS:-7}
       TRYON_RESULT_RETENTION_DAYS: ${TRYON_RESULT_RETENTION_DAYS:-30}
       REALTIME_PROVIDER: ${REALTIME_PROVIDER}
-      REALTIME_SESSION_URL: ${REALTIME_SESSION_URL}
-      REALTIME_PROVIDER_TOKEN: ${REALTIME_PROVIDER_TOKEN}
+      DECART_API_KEY: ${DECART_API_KEY}
+      REALTIME_WEB_ORIGIN: ${REALTIME_WEB_ORIGIN:-https://tryon.xuefeitryon.com}
       BODY_SCAN_PROVIDER: ${BODY_SCAN_PROVIDER}
       BODY_SCAN_WORKER_URL: ${BODY_SCAN_WORKER_URL}
       BODY_SCAN_WORKER_TOKEN: ${BODY_SCAN_WORKER_TOKEN}

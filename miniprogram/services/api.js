@@ -243,6 +243,12 @@ const api = {
   getCapabilities: () => useMock()
     ? mock.getCapabilities()
     : request('GET', '/api/v1/capabilities'),
+
+  createRealtimeClientToken: (sessionId) => request(
+    'POST',
+    '/api/v1/experience-sessions/' + sessionId + '/realtime/client-token',
+    {}
+  ),
   getFitProfile: () => useMock()
     ? mock.getFitProfile()
     : request('GET', '/api/v1/me/fit-profile').then((r) => Object.assign({}, r, {
@@ -302,13 +308,7 @@ const api = {
     ? mock.completeBodyScan(scanId)
     : request('POST', '/api/v1/body-scans/' + scanId + '/complete'),
 
-  startRealtime: (sessionId) => useMock()
-    ? mock.startRealtime(sessionId)
-    : request('POST', '/api/v1/experience-sessions/' + sessionId + '/realtime').then((r) => Object.assign({}, r, {
-        duration: r.duration || r.max_duration_seconds || 15
-      })),
-  // 当前后端令牌会自动过期；前端停止本地播放和倒计时即可。
-  stopRealtime: (sessionId) => useMock() ? mock.stopRealtime(sessionId) : Promise.resolve({ stopped: true })
 };
 
+api.absoluteMediaUrl = absoluteMediaUrl;
 module.exports = api;

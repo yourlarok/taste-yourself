@@ -2,12 +2,18 @@
   "pages": [
     "pages/home/home",
     "pages/studio/studio",
+    "pages/realtime/realtime",
     "pages/profile/profile"
   ],
   "window": {
     "navigationStyle": "custom",
     "backgroundColor": "#FAF7F1",
     "backgroundTextStyle": "dark"
+  },
+  "permission": {
+    "scope.camera": {
+      "desc": "用于实时试衣镜取景，并在你同意后将画面实时发送至试衣模型处理"
+    }
   },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",

@@ -66,6 +66,7 @@ class PrivacyService:
                 ("wardrobe_garments", "user_id"),
                 ("person_images", "user_id"),
                 ("body_scans", "user_id"),
+                ("video_tryon_jobs", "user_id"),
                 ("experience_sessions", "user_id"),
                 ("daily_usage", "user_id"),
                 ("user_fit_profiles", "user_id"),

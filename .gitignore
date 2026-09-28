@@ -8,6 +8,8 @@ venv/
 .env
 *.db
 *.sqlite3
+**/node_modules/
+realtime-web/.npm-cache/
 server/data/
 /data/
 dist/

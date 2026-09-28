@@ -53,10 +53,6 @@ def test_devtools_vertical_slice(tmp_path: Path, monkeypatch):
         assert len(analysis.json()["variants"]) == 3
         assert "recommended_size" not in analysis.json()
 
-        realtime = client.post(f"/api/v1/experience-sessions/{session_id}/realtime")
-        assert realtime.status_code == 200
-        assert realtime.json()["max_duration_seconds"] == 15
-
         scan = client.post(
             "/api/v1/body-scans",
             json={"experience_session_id": session_id, "consented": True},
@@ -86,6 +82,7 @@ def test_devtools_vertical_slice(tmp_path: Path, monkeypatch):
         assert personal_analysis.status_code == 200
         assert personal_analysis.json()["profile_source"] == "mock"
         assert personal_analysis.json()["variants"][0]["reasons"][0]["body_cm"] == 92.0
+
 
         uploaded = client.post(
             "/api/v1/wardrobe/garments",

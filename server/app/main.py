@@ -6,16 +6,11 @@ from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
 from app.providers.body_scan import HttpBodyScanProvider, MockBodyScanProvider
 from app.providers.content_safety import HttpContentSafetyProvider, MockContentSafetyProvider
-from app.providers.realtime import (
-    DecartRealtimeProvider,
-    DisabledRealtimeProvider,
-    HttpRealtimeProvider,
-    MockRealtimeProvider,
-)
 from app.providers.tryon import FashnApiTryOnProvider, FashnHttpTryOnProvider, MockTryOnProvider
 from app.repositories.body_scans import BodyScanRepository
 from app.repositories.experience import ExperienceRepository
@@ -37,7 +32,6 @@ def validate_production_environment(app_env: str) -> None:
     required_values = {
         "WECHAT_APP_ID": os.getenv("WECHAT_APP_ID", ""),
         "WECHAT_APP_SECRET": os.getenv("WECHAT_APP_SECRET", ""),
-        "REALTIME_SESSION_URL": os.getenv("REALTIME_SESSION_URL", ""),
         "BODY_SCAN_WORKER_URL": os.getenv("BODY_SCAN_WORKER_URL", ""),
         "CONTENT_SAFETY_URL": os.getenv("CONTENT_SAFETY_URL", ""),
     }
@@ -51,8 +45,10 @@ def validate_production_environment(app_env: str) -> None:
         raise RuntimeError("Missing production configuration: FASHN_WORKER_URL")
     if tryon_provider == "fashn-api" and not os.getenv("FASHN_API_KEY"):
         raise RuntimeError("Missing production configuration: FASHN_API_KEY")
+    if not os.getenv("DECART_API_KEY"):
+        raise RuntimeError("Missing production configuration: DECART_API_KEY")
     selections = {
-        "REALTIME_PROVIDER": (os.getenv("REALTIME_PROVIDER", ""), {"http", "decart"}),
+        "REALTIME_PROVIDER": (os.getenv("REALTIME_PROVIDER", ""), {"decart-realtime"}),
         "BODY_SCAN_PROVIDER": (os.getenv("BODY_SCAN_PROVIDER", ""), {"http"}),
         "CONTENT_SAFETY_PROVIDER": (os.getenv("CONTENT_SAFETY_PROVIDER", ""), {"http"}),
     }
@@ -111,6 +107,10 @@ async def lifespan(app: FastAPI):
     )
     wechat_app_id = os.getenv("WECHAT_APP_ID", "")
     wechat_app_secret = os.getenv("WECHAT_APP_SECRET", "")
+    app.state.decart_api_key = os.getenv("DECART_API_KEY", "")
+    app.state.realtime_web_origin = os.getenv(
+        "REALTIME_WEB_ORIGIN", "https://tryon.xuefeitryon.com"
+    )
     app.state.wechat_auth_service = (
         WechatAuthService(
             wechat_app_id,
@@ -146,30 +146,6 @@ async def lifespan(app: FastAPI):
         )
     else:
         raise RuntimeError(f"Unsupported TRYON_PROVIDER: {provider_name}")
-    realtime_provider_name = os.getenv("REALTIME_PROVIDER", "mock")
-    if realtime_provider_name == "mock":
-        app.state.realtime_provider = MockRealtimeProvider()
-    elif realtime_provider_name == "disabled":
-        app.state.realtime_provider = DisabledRealtimeProvider()
-    elif realtime_provider_name == "http":
-        realtime_session_url = os.getenv("REALTIME_SESSION_URL")
-        if not realtime_session_url:
-            raise RuntimeError("REALTIME_SESSION_URL is required for REALTIME_PROVIDER=http")
-        app.state.realtime_provider = HttpRealtimeProvider(
-            realtime_session_url,
-            os.getenv("REALTIME_PROVIDER_TOKEN", ""),
-        )
-    elif realtime_provider_name == "decart":
-        realtime_session_url = os.getenv("REALTIME_SESSION_URL")
-        if not realtime_session_url:
-            raise RuntimeError("REALTIME_SESSION_URL is required for REALTIME_PROVIDER=decart")
-        app.state.realtime_provider = DecartRealtimeProvider(
-            realtime_session_url,
-            os.getenv("REALTIME_PROVIDER_TOKEN", ""),
-            os.getenv("DECART_API_KEY", ""),
-        )
-    else:
-        raise RuntimeError(f"Unsupported REALTIME_PROVIDER: {realtime_provider_name}")
     body_provider_name = os.getenv("BODY_SCAN_PROVIDER", "mock")
     if body_provider_name == "mock":
         app.state.body_scan_provider = MockBodyScanProvider()
@@ -211,6 +187,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(router)
+live_mirror_directory = Path(
+    os.getenv("LIVE_MIRROR_DIR", str(Path(__file__).resolve().parents[1] / "static/live-mirror"))
+)
+if live_mirror_directory.is_dir():
+    app.mount(
+        "/live-mirror",
+        StaticFiles(directory=live_mirror_directory, html=True),
+        name="live-mirror",
+    )
+app.state.live_mirror_ready = (live_mirror_directory / "index.html").is_file()
 
 
 @app.get("/health")

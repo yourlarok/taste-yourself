@@ -1,0 +1,27 @@
+* { box-sizing: border-box; }
+html, body, #mirror { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #211b14; color: #fdfbf7; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; }
+button { color: inherit; font: inherit; }
+.mirror { position: relative; height: 100dvh; min-height: 100%; background: #211b14; }
+#output { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: radial-gradient(ellipse at 50% 40%, #45392b 0%, #211b14 65%); }
+.topbar { position: absolute; z-index: 2; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 12px; padding: calc(env(safe-area-inset-top) + 14px) 18px 14px; background: linear-gradient(180deg, rgba(24,20,16,.65), transparent); }
+.icon-button { width: 42px; height: 42px; flex: 0 0 42px; border: 1px solid rgba(255,255,255,.22); border-radius: 50%; background: rgba(34,29,24,.42); font-size: 34px; line-height: 32px; }
+.topcopy { min-width: 0; flex: 1; }
+.eyebrow { color: rgba(255,255,255,.54); font: 10px/1.5 Georgia, serif; letter-spacing: 2px; }
+.garment-name { max-width: 48vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; letter-spacing: 1px; }
+.live-status { display: flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid rgba(255,255,255,.17); border-radius: 99px; background: rgba(34,29,24,.48); font-size: 11px; white-space: nowrap; }
+.live-status i { width: 7px; height: 7px; border-radius: 50%; background: #d3b899; box-shadow: 0 0 12px rgba(211,184,153,.65); }
+.live-status.is-error i { background: #eaa394; box-shadow: none; }
+.veil { position: absolute; z-index: 1; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; background: radial-gradient(ellipse at 50% 42%, rgba(69,57,43,.92), rgba(33,27,20,.95) 68%); transition: opacity .28s ease; }
+.veil.is-hidden { opacity: 0; pointer-events: none; }
+.spinner { width: 42px; height: 42px; margin-bottom: 22px; border: 1px solid rgba(255,255,255,.22); border-top-color: #e7cda9; border-radius: 50%; animation: spin 1s linear infinite; }
+.veil-title { font-family: Georgia, serif; font-size: 21px; letter-spacing: 1px; }
+.veil-copy { max-width: 300px; margin-top: 12px; color: rgba(253,251,247,.65); font-size: 13px; line-height: 1.65; }
+.retry { margin-top: 24px; padding: 11px 22px; border: 1px solid rgba(255,255,255,.42); border-radius: 99px; background: transparent; }
+.dock { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; padding: 20px 18px calc(env(safe-area-inset-bottom) + 14px); background: linear-gradient(0deg, rgba(24,20,16,.9), rgba(24,20,16,.56) 75%, transparent); }
+.privacy-note { margin-bottom: 12px; color: rgba(255,255,255,.58); text-align: center; font-size: 10px; letter-spacing: .5px; }
+.garment-rail { display: flex; justify-content: center; gap: 10px; max-width: 100%; overflow-x: auto; padding: 2px 0 12px; }
+.garment { width: 56px; height: 66px; flex: 0 0 56px; overflow: hidden; padding: 0; border: 2px solid transparent; border-radius: 12px; background: rgba(255,255,255,.12); }
+.garment.is-selected { border-color: #e7cda9; }
+.garment img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.exit-button { display: block; width: 100%; min-height: 48px; border: 1px solid rgba(255,255,255,.3); border-radius: 99px; background: rgba(253,251,247,.11); letter-spacing: 1px; font-size: 13px; }
+@keyframes spin { to { transform: rotate(360deg); } }

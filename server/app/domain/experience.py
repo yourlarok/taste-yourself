@@ -57,19 +57,6 @@ class StaticTryOnCreate(BaseModel):
     person_image_id: str | None = None
 
 
-class RealtimeSessionResult(BaseModel):
-    id: str
-    experience_session_id: str
-    status: Literal["ready", "unavailable"]
-    provider: str
-    max_duration_seconds: int = 15
-    expires_at: datetime
-    client_token: str | None = None
-    publish_url: str | None = None
-    play_url: str | None = None
-    notice: str
-
-
 class BodyScanCreate(BaseModel):
     experience_session_id: str
     consented: bool

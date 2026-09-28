@@ -1,0 +1,10 @@
+<view class="live-page">
+  <web-view wx:if="{{src}}" src="{{src}}" bindmessage="onWebviewMessage" binderror="onWebviewError"></web-view>
+  <view wx:else class="live-loading">
+    <view class="live-mark"></view>
+    <text class="live-title">正在开启实时试衣镜</text>
+    <text class="live-copy">连接相机与实时影像处理</text>
+    <text wx:if="{{error}}" class="live-error">{{error}}</text>
+    <view wx:if="{{error}}" class="live-back" bindtap="onBack">返回试衣空间</view>
+  </view>
+</view>

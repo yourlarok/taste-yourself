@@ -1,0 +1,10 @@
+.git
+.env
+.pytest_cache
+.ruff_cache
+.venv
+**/node_modules
+realtime-web/.npm-cache
+realtime-web/dist
+data
+server/data
