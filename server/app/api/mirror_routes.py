@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import sqlite3
@@ -74,7 +75,7 @@ async def transcribe_mirror_audio(
     del current_user
     raw = await audio.read(10 * 1024 * 1024 + 1)
     try:
-        text = recognizer.transcribe(raw, audio.content_type or "")
+        text = await asyncio.to_thread(recognizer.transcribe, raw, audio.content_type or "")
     except RuntimeError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
     except SpeechRecognitionError as error:
@@ -210,7 +211,13 @@ async def create_fun_face_assessment(
     except InvalidImage as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     try:
-        require_safe_image(content_safety, storage, stored.relative_path, "fun_face")
+        await asyncio.to_thread(
+            require_safe_image,
+            content_safety,
+            storage,
+            stored.relative_path,
+            "fun_face",
+        )
         image_bytes = (storage.root / stored.relative_path).read_bytes()
         encoded = base64.b64encode(image_bytes).decode("ascii")
         messages = [
@@ -234,7 +241,7 @@ async def create_fun_face_assessment(
                 ],
             },
         ]
-        vision_result = vision.complete_json(messages)
+        vision_result = await asyncio.to_thread(vision.complete_json, messages)
         result = build_fun_face_result(current_user, answers, vision_result)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error

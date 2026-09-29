@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import sqlite3
 from typing import Literal
@@ -731,7 +732,13 @@ async def upload_body_scan_frame(
         except ValueError as error:
             storage.delete(stored.relative_path)
             raise HTTPException(status_code=422, detail=str(error)) from error
-    require_safe_image(content_safety, storage, stored.relative_path, "body_scan")
+    await asyncio.to_thread(
+        require_safe_image,
+        content_safety,
+        storage,
+        stored.relative_path,
+        "body_scan",
+    )
     scans.add_frame(scan_id, angle, stored.relative_path)
     return BodyScanFrame(angle=angle, image_path=stored.relative_path)
 
@@ -833,7 +840,13 @@ async def upload_garment(
         stored = await storage.save(image, "garments")
     except InvalidImage as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    require_safe_image(content_safety, storage, stored.relative_path, "garment_upload")
+    await asyncio.to_thread(
+        require_safe_image,
+        content_safety,
+        storage,
+        stored.relative_path,
+        "garment_upload",
+    )
     record = repository.add_garment(current_user, name, category, stored)
     return record.model_copy(update={"image_url": signer.sign(record.image_path)})
 
@@ -918,7 +931,13 @@ async def upload_person_image(
         stored = await storage.save(image, "people")
     except InvalidImage as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    require_safe_image(content_safety, storage, stored.relative_path, "person_upload")
+    await asyncio.to_thread(
+        require_safe_image,
+        content_safety,
+        storage,
+        stored.relative_path,
+        "person_upload",
+    )
     return repository.add_person_image(current_user, stored)
 
 

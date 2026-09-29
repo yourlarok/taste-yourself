@@ -55,6 +55,26 @@ def test_fashn_http_provider_sends_inputs_and_stores_result(tmp_path: Path, monk
     assert list((tmp_path / "media" / "results").glob("*.jpg"))
 
 
+def test_fashn_api_provider_preserves_webp_data_uri_type(tmp_path: Path):
+    image_path = tmp_path / "garment.webp"
+    Image.new("RGB", (320, 480), color=(40, 70, 110)).save(image_path, "WEBP")
+
+    uri = FashnApiTryOnProvider._as_data_uri(image_path)
+
+    assert uri.startswith("data:image/webp;base64,")
+
+
+def test_fashn_api_provider_rejects_unexpected_remote_output(tmp_path: Path):
+    provider = FashnApiTryOnProvider("api-key", LocalImageStorage(tmp_path))
+
+    try:
+        provider._read_output("https://example.com/output.jpg")
+    except ValueError as error:
+        assert str(error) == "FASHN API ignored return_base64"
+    else:
+        raise AssertionError("remote output must be rejected")
+
+
 def test_fashn_http_provider_requires_both_images(tmp_path: Path):
     provider = FashnHttpTryOnProvider("http://worker", "", LocalImageStorage(tmp_path))
 

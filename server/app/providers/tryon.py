@@ -212,8 +212,17 @@ class FashnApiTryOnProvider:
 
     @staticmethod
     def _as_data_uri(path: Path) -> str:
+        media_types = {
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".webp": "image/webp",
+        }
+        media_type = media_types.get(path.suffix.lower())
+        if media_type is None:
+            raise ValueError("unsupported_tryon_image_type")
         encoded = base64.b64encode(path.read_bytes()).decode("ascii")
-        return f"data:image/jpeg;base64,{encoded}"
+        return f"data:{media_type};base64,{encoded}"
 
     @staticmethod
     def _normalize_category(category: str) -> str:
@@ -236,6 +245,4 @@ class FashnApiTryOnProvider:
             except (ValueError, binascii.Error) as error:
                 raise ValueError("FASHN API returned invalid image data") from error
 
-        response = httpx.get(output, timeout=min(self.timeout_seconds, 30))
-        response.raise_for_status()
-        return response.content
+        raise ValueError("FASHN API ignored return_base64")
