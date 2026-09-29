@@ -3,6 +3,7 @@ from pathlib import Path
 from app.providers.content_safety import (
     BailianContentSafetyProvider,
     HttpContentSafetyProvider,
+    WechatImageSafetyProvider,
 )
 
 
@@ -99,3 +100,71 @@ def test_bailian_content_safety_uses_guardrail_and_rejects(tmp_path: Path, monke
     assert "data:image/jpeg;base64," in captured["json"]["messages"][1]["content"][1][
         "image_url"
     ]["url"]
+
+
+def test_wechat_image_safety_caches_token_and_allows_image(tmp_path: Path, monkeypatch):
+    image = tmp_path / "image.jpg"
+    image.write_bytes(b"jpeg-bytes")
+    calls = {"token": 0, "check": 0}
+
+    class FakeResponse:
+        def __init__(self, data):
+            self.data = data
+
+        @staticmethod
+        def raise_for_status():
+            return None
+
+        def json(self):
+            return self.data
+
+    def fake_get(url, **kwargs):
+        calls["token"] += 1
+        assert kwargs["params"]["appid"] == "app-id"
+        assert kwargs["params"]["secret"] == "app-secret"
+        return FakeResponse({"access_token": "access-token", "expires_in": 7200})
+
+    def fake_post(url, **kwargs):
+        calls["check"] += 1
+        assert kwargs["params"] == {"access_token": "access-token"}
+        assert kwargs["files"]["media"][2] == "image/jpeg"
+        return FakeResponse({"errcode": 0, "errmsg": "ok"})
+
+    monkeypatch.setattr("app.providers.content_safety.httpx.get", fake_get)
+    monkeypatch.setattr("app.providers.content_safety.httpx.post", fake_post)
+    provider = WechatImageSafetyProvider("app-id", "app-secret")
+
+    assert provider.is_allowed(image, "person_upload")
+    assert provider.is_allowed(image, "garment_upload")
+    assert calls == {"token": 1, "check": 2}
+
+
+def test_wechat_image_safety_rejects_risky_image(tmp_path: Path, monkeypatch):
+    image = tmp_path / "image.webp"
+    image.write_bytes(b"webp-bytes")
+
+    class FakeResponse:
+        def __init__(self, data):
+            self.data = data
+
+        @staticmethod
+        def raise_for_status():
+            return None
+
+        def json(self):
+            return self.data
+
+    monkeypatch.setattr(
+        "app.providers.content_safety.httpx.get",
+        lambda *args, **kwargs: FakeResponse(
+            {"access_token": "access-token", "expires_in": 7200}
+        ),
+    )
+    monkeypatch.setattr(
+        "app.providers.content_safety.httpx.post",
+        lambda *args, **kwargs: FakeResponse({"errcode": 87014, "errmsg": "risky content"}),
+    )
+
+    assert not WechatImageSafetyProvider("app-id", "app-secret").is_allowed(
+        image, "garment_upload"
+    )

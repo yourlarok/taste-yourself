@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import base64
 import json
+import threading
+import time
 from pathlib import Path
 from typing import Protocol
 
@@ -21,6 +23,84 @@ class DisabledContentSafetyProvider:
 
     def is_allowed(self, image_path: Path, scene: str) -> bool:
         raise RuntimeError("content_safety_not_configured")
+
+
+class WechatImageSafetyProvider:
+    """Synchronous image moderation using the official Mini Program security API."""
+
+    name = "wechat-image-safety"
+    TOKEN_ENDPOINT = "https://api.weixin.qq.com/cgi-bin/token"
+    CHECK_ENDPOINT = "https://api.weixin.qq.com/wxa/img_sec_check"
+    TOKEN_ERRORS = {40001, 40014, 42001}
+
+    def __init__(self, app_id: str, app_secret: str, timeout_seconds: float = 20) -> None:
+        self.app_id = app_id
+        self.app_secret = app_secret
+        self.timeout_seconds = timeout_seconds
+        self._access_token = ""
+        self._token_expires_at = 0.0
+        self._token_lock = threading.Lock()
+
+    def _token(self, force_refresh: bool = False) -> str:
+        with self._token_lock:
+            if (
+                not force_refresh
+                and self._access_token
+                and time.monotonic() < self._token_expires_at
+            ):
+                return self._access_token
+            response = httpx.get(
+                self.TOKEN_ENDPOINT,
+                params={
+                    "grant_type": "client_credential",
+                    "appid": self.app_id,
+                    "secret": self.app_secret,
+                },
+                timeout=self.timeout_seconds,
+            )
+            response.raise_for_status()
+            data = response.json()
+            token = data.get("access_token")
+            if not isinstance(token, str) or not token:
+                raise ValueError("wechat_content_safety_token_failed")
+            expires_in = max(300, int(data.get("expires_in", 7200)))
+            self._access_token = token
+            self._token_expires_at = time.monotonic() + expires_in - 120
+            return token
+
+    def _check(self, image_path: Path, token: str) -> dict:
+        media_types = {
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".webp": "image/webp",
+        }
+        media_type = media_types.get(image_path.suffix.lower(), "application/octet-stream")
+        with image_path.open("rb") as image:
+            response = httpx.post(
+                self.CHECK_ENDPOINT,
+                params={"access_token": token},
+                files={"media": (image_path.name, image, media_type)},
+                timeout=self.timeout_seconds,
+            )
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data, dict):
+            raise ValueError("wechat_content_safety_invalid_response")
+        return data
+
+    def is_allowed(self, image_path: Path, scene: str) -> bool:
+        del scene
+        data = self._check(image_path, self._token())
+        errcode = int(data.get("errcode", -1))
+        if errcode in self.TOKEN_ERRORS:
+            data = self._check(image_path, self._token(force_refresh=True))
+            errcode = int(data.get("errcode", -1))
+        if errcode == 0:
+            return True
+        if errcode == 87014:
+            return False
+        raise ValueError(f"wechat_content_safety_error:{errcode}")
 
 
 class HttpContentSafetyProvider:

@@ -25,6 +25,7 @@ from app.providers.content_safety import (
     BailianContentSafetyProvider,
     DisabledContentSafetyProvider,
     HttpContentSafetyProvider,
+    WechatImageSafetyProvider,
 )
 from app.providers.llm import DisabledLLMProvider, OpenAICompatibleLLMProvider
 from app.providers.speech import DisabledSpeechRecognizer, QwenASRRecognizer
@@ -81,7 +82,7 @@ def validate_production_environment(app_env: str) -> None:
         "REALTIME_PROVIDER": (os.getenv("REALTIME_PROVIDER", ""), {"decart-realtime"}),
         "CONTENT_SAFETY_PROVIDER": (
             os.getenv("CONTENT_SAFETY_PROVIDER", ""),
-            {"http", "bailian"},
+            {"http", "bailian", "wechat"},
         ),
     }
     invalid = [name for name, (actual, expected) in selections.items() if actual not in expected]
@@ -271,6 +272,16 @@ async def lifespan(app: FastAPI):
         app.state.content_safety_provider = HttpContentSafetyProvider(
             safety_url,
             os.getenv("CONTENT_SAFETY_TOKEN", ""),
+        )
+    elif safety_provider_name == "wechat":
+        if not wechat_app_id or not wechat_app_secret:
+            raise RuntimeError(
+                "WECHAT_APP_ID and WECHAT_APP_SECRET are required for "
+                "CONTENT_SAFETY_PROVIDER=wechat"
+            )
+        app.state.content_safety_provider = WechatImageSafetyProvider(
+            wechat_app_id,
+            wechat_app_secret,
         )
     else:
         raise RuntimeError(f"Unsupported CONTENT_SAFETY_PROVIDER: {safety_provider_name}")

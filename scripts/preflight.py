@@ -84,8 +84,8 @@ def main() -> int:
     if safety_provider == "http":
         if not os.getenv("CONTENT_SAFETY_URL"):
             failures.append("缺少环境变量 CONTENT_SAFETY_URL")
-    elif safety_provider != "bailian":
-        failures.append("CONTENT_SAFETY_PROVIDER 必须为 bailian 或 http")
+    elif safety_provider not in {"bailian", "wechat"}:
+        failures.append("CONTENT_SAFETY_PROVIDER 必须为 wechat、bailian 或 http")
     positive_integers = (
         "STATIC_DAILY_LIMIT",
         "REALTIME_DAILY_LIMIT",
