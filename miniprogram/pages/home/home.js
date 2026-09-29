@@ -12,6 +12,8 @@ Page({
     messages: [],
     inputValue: '',
     sending: false,
+    recording: false,
+    transcribing: false,
     introVisible: true,
     scrollAnchor: '',
     faceAvailable: true,
@@ -20,7 +22,58 @@ Page({
 
   onLoad() {
     this.setData({ layout: app.globalData.layout });
+    this.setupRecorder();
     this.startMirror();
+  },
+
+  onUnload() {
+    if (this._recorder && this.data.recording) this._recorder.stop();
+  },
+
+  setupRecorder() {
+    if (!wx.getRecorderManager) return;
+    this._recorder = wx.getRecorderManager();
+    this._recorder.onStart(() => this.setData({ recording: true, errorText: '' }));
+    this._recorder.onStop((result) => {
+      this.setData({ recording: false });
+      if (!result || !result.tempFilePath) return;
+      this.transcribeAndSend(result.tempFilePath);
+    });
+    this._recorder.onError(() => {
+      this.setData({ recording: false, transcribing: false });
+      wx.showToast({ title: '没有录到声音，请检查麦克风权限', icon: 'none' });
+    });
+  },
+
+  onVoiceTap() {
+    if (this.data.sending || this.data.transcribing || !this._recorder) return;
+    if (this.data.recording) {
+      this._recorder.stop();
+      return;
+    }
+    this.setData({ introVisible: false });
+    this._recorder.start({
+      duration: 15000,
+      sampleRate: 16000,
+      numberOfChannels: 1,
+      encodeBitRate: 48000,
+      format: 'mp3'
+    });
+  },
+
+  transcribeAndSend(filePath) {
+    this.setData({ transcribing: true });
+    api.transcribeMirrorAudio(filePath)
+      .then((result) => {
+        const text = String(result.text || '').trim();
+        this.setData({ transcribing: false, inputValue: text });
+        if (text) this.send(text);
+      })
+      .catch((error) => {
+        const info = api.explainError(error, 'mirror');
+        this.setData({ transcribing: false });
+        wx.showToast({ title: info.desc || '没有听清，请再说一次', icon: 'none' });
+      });
   },
 
   startMirror() {

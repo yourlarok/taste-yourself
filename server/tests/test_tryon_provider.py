@@ -38,9 +38,7 @@ def test_fashn_http_provider_sends_inputs_and_stores_result(tmp_path: Path, monk
 
     monkeypatch.setattr("app.providers.tryon.httpx.post", fake_post)
     storage = LocalImageStorage(tmp_path / "media")
-    provider = FashnHttpTryOnProvider(
-        "http://worker:9000/", "secret", storage, timeout_seconds=5
-    )
+    provider = FashnHttpTryOnProvider("http://worker:9000/", "secret", storage, timeout_seconds=5)
 
     result = provider.generate_static(
         "session-1",

@@ -113,7 +113,6 @@ class BodyScanRepository:
                 (status, datetime.now(UTC).isoformat(), scan_id),
             )
 
-
     def delete_frames(self, scan_id: str) -> list[str]:
         with self._connect() as connection:
             rows = connection.execute(

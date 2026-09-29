@@ -39,9 +39,12 @@ def test_http_body_scan_preserves_uncertainty(tmp_path: Path, monkeypatch):
     )
     provider = HttpBodyScanProvider("http://measurement-worker/", "secret")
 
-    result = provider.process("scan-1", "session-1", {"front": front, "side": side}, {
-        "age": 30, "gender": "female", "height_cm": 168, "weight_kg": 58
-    })
+    result = provider.process(
+        "scan-1",
+        "session-1",
+        {"front": front, "side": side},
+        {"age": 30, "gender": "female", "height_cm": 168, "weight_kg": 58},
+    )
 
     assert result.status == "completed"
     assert result.measurements_cm == {"chest_cm": 92.4, "waist_cm": 75.8}
@@ -64,15 +67,17 @@ def test_bodygram_maps_real_measurements_and_calibration(tmp_path: Path, monkeyp
 
         @staticmethod
         def json():
-            return {"entry": {
-                "id": "provider-scan-123",
-                "status": "success",
-                "measurements": [
-                    {"name": "bustGirth", "value": 934, "unit": "mm"},
-                    {"name": "waistGirth", "value": 781, "unit": "mm"},
-                    {"name": "hipGirth", "value": 101.2, "unit": "cm"},
-                ],
-            }}
+            return {
+                "entry": {
+                    "id": "provider-scan-123",
+                    "status": "success",
+                    "measurements": [
+                        {"name": "bustGirth", "value": 934, "unit": "mm"},
+                        {"name": "waistGirth", "value": 781, "unit": "mm"},
+                        {"name": "hipGirth", "value": 101.2, "unit": "cm"},
+                    ],
+                }
+            }
 
     def fake_post(url, **kwargs):
         captured.update(url=url, **kwargs)
@@ -134,9 +139,12 @@ def test_bodygram_rejects_scan_without_body_measurements(tmp_path: Path, monkeyp
     provider = BodygramPlatformProvider("org-1", "secret-key")
 
     try:
-        provider.process("local", "session", {"front": front, "side": side}, {
-            "age": 30, "gender": "male", "height_cm": 180, "weight_kg": 75
-        })
+        provider.process(
+            "local",
+            "session",
+            {"front": front, "side": side},
+            {"age": 30, "gender": "male", "height_cm": 180, "weight_kg": 75},
+        )
     except ValueError as error:
         assert str(error) == "bodygram_returned_no_usable_measurements"
     else:

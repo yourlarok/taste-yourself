@@ -8,9 +8,7 @@ from PIL import Image
 from app.main import app
 
 
-def test_mirror_bootstrap_and_conversation_without_fake_agent(
-    tmp_path: Path, monkeypatch
-):
+def test_mirror_bootstrap_and_conversation_without_fake_agent(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "mirror.db"))
     monkeypatch.setenv("MIRROR_LLM_API_KEY", "")
     monkeypatch.setenv("MIRROR_LLM_BASE_URL", "")
@@ -34,9 +32,7 @@ def test_mirror_bootstrap_and_conversation_without_fake_agent(
         assert unavailable.json()["detail"] == "mirror_agent_unavailable"
 
 
-def test_wellbeing_assessment_uses_who5_scoring_and_collects_card(
-    tmp_path: Path, monkeypatch
-):
+def test_wellbeing_assessment_uses_who5_scoring_and_collects_card(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "wellbeing.db"))
 
     with TestClient(app) as client:
@@ -79,9 +75,7 @@ def test_wellbeing_immediate_danger_prioritizes_safety(tmp_path: Path, monkeypat
     assert response.json()["card"]["cat_type"] == "守夜黑猫"
 
 
-def test_fun_face_is_real_vision_backed_bounded_and_daily_limited(
-    tmp_path: Path, monkeypatch
-):
+def test_fun_face_is_real_vision_backed_bounded_and_daily_limited(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "fun-face.db"))
     monkeypatch.setenv("MEDIA_ROOT", str(tmp_path / "media"))
     monkeypatch.setenv("MIRROR_LLM_API_KEY", "test-key")
@@ -98,18 +92,23 @@ def test_fun_face_is_real_vision_backed_bounded_and_daily_limited(
         @staticmethod
         def json():
             return {
-                "choices": [{
-                    "message": {
-                        "content": json.dumps({
-                            "photo_quality": 88,
-                            "expression_energy": 74,
-                            "lighting_softness": 61,
-                            "style_clarity": 83,
-                            "eye_contact": 70,
-                            "observations": ["正面构图清晰", "光线较柔和"],
-                        }, ensure_ascii=False)
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "photo_quality": 88,
+                                    "expression_energy": 74,
+                                    "lighting_softness": 61,
+                                    "style_clarity": 83,
+                                    "eye_contact": 70,
+                                    "observations": ["正面构图清晰", "光线较柔和"],
+                                },
+                                ensure_ascii=False,
+                            )
+                        }
                     }
-                }]
+                ]
             }
 
     def fake_post(url, **kwargs):

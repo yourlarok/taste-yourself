@@ -15,9 +15,19 @@ from app.providers.body_scan import (
     DisabledBodyScanProvider,
     HttpBodyScanProvider,
 )
-from app.providers.content_safety import HttpContentSafetyProvider, MockContentSafetyProvider
+from app.providers.commerce import DisabledCommerceProvider, TaobaoOpenApiProvider
+from app.providers.content_safety import (
+    BailianContentSafetyProvider,
+    DisabledContentSafetyProvider,
+    HttpContentSafetyProvider,
+)
 from app.providers.llm import DisabledLLMProvider, OpenAICompatibleLLMProvider
-from app.providers.tryon import FashnApiTryOnProvider, FashnHttpTryOnProvider, MockTryOnProvider
+from app.providers.speech import DisabledSpeechRecognizer, QwenASRRecognizer
+from app.providers.tryon import (
+    DisabledTryOnProvider,
+    FashnApiTryOnProvider,
+    FashnHttpTryOnProvider,
+)
 from app.repositories.body_scans import BodyScanRepository
 from app.repositories.experience import ExperienceRepository
 from app.repositories.feedback import FeedbackRepository
@@ -40,18 +50,20 @@ def validate_production_environment(app_env: str) -> None:
     required_values = {
         "WECHAT_APP_ID": os.getenv("WECHAT_APP_ID", ""),
         "WECHAT_APP_SECRET": os.getenv("WECHAT_APP_SECRET", ""),
-        "CONTENT_SAFETY_URL": os.getenv("CONTENT_SAFETY_URL", ""),
         "MIRROR_LLM_BASE_URL": os.getenv("MIRROR_LLM_BASE_URL", ""),
         "MIRROR_LLM_API_KEY": os.getenv("MIRROR_LLM_API_KEY", ""),
         "MIRROR_LLM_MODEL": os.getenv("MIRROR_LLM_MODEL", ""),
         "MIRROR_VISION_MODEL": os.getenv("MIRROR_VISION_MODEL", ""),
+        "MIRROR_ASR_MODEL": os.getenv("MIRROR_ASR_MODEL", ""),
+        "TAOBAO_APP_KEY": os.getenv("TAOBAO_APP_KEY", ""),
+        "TAOBAO_APP_SECRET": os.getenv("TAOBAO_APP_SECRET", ""),
     }
     missing = [name for name, value in required_values.items() if not value]
     if missing:
         raise RuntimeError("Missing production configuration: " + ", ".join(missing))
     tryon_provider = os.getenv("TRYON_PROVIDER", "")
     if tryon_provider not in {"fashn-http", "fashn-api"}:
-        raise RuntimeError("Production forbids mock or disabled providers: TRYON_PROVIDER")
+        raise RuntimeError("Production requires a real provider: TRYON_PROVIDER")
     if tryon_provider == "fashn-http" and not os.getenv("FASHN_WORKER_URL"):
         raise RuntimeError("Missing production configuration: FASHN_WORKER_URL")
     if tryon_provider == "fashn-api" and not os.getenv("FASHN_API_KEY"):
@@ -60,26 +72,29 @@ def validate_production_environment(app_env: str) -> None:
         raise RuntimeError("Missing production configuration: DECART_API_KEY")
     selections = {
         "REALTIME_PROVIDER": (os.getenv("REALTIME_PROVIDER", ""), {"decart-realtime"}),
-        "CONTENT_SAFETY_PROVIDER": (os.getenv("CONTENT_SAFETY_PROVIDER", ""), {"http"}),
+        "CONTENT_SAFETY_PROVIDER": (
+            os.getenv("CONTENT_SAFETY_PROVIDER", ""),
+            {"http", "bailian"},
+        ),
     }
     invalid = [name for name, (actual, expected) in selections.items() if actual not in expected]
     if invalid:
-        raise RuntimeError("Production forbids mock or disabled providers: " + ", ".join(invalid))
+        raise RuntimeError("Production requires real providers: " + ", ".join(invalid))
+    if os.getenv("CONTENT_SAFETY_PROVIDER") == "http" and not os.getenv(
+        "CONTENT_SAFETY_URL"
+    ):
+        raise RuntimeError("Missing production configuration: CONTENT_SAFETY_URL")
     body_provider = os.getenv("BODY_SCAN_PROVIDER", "")
     if body_provider == "bodygram-platform":
         missing_bodygram = [
-            name
-            for name in ("BODYGRAM_ORG_ID", "BODYGRAM_API_KEY")
-            if not os.getenv(name)
+            name for name in ("BODYGRAM_ORG_ID", "BODYGRAM_API_KEY") if not os.getenv(name)
         ]
         if missing_bodygram:
-            raise RuntimeError(
-                "Missing production configuration: " + ", ".join(missing_bodygram)
-            )
+            raise RuntimeError("Missing production configuration: " + ", ".join(missing_bodygram))
     elif body_provider == "http" and not os.getenv("BODY_SCAN_WORKER_URL"):
         raise RuntimeError("Missing production configuration: BODY_SCAN_WORKER_URL")
     elif body_provider != "http":
-        raise RuntimeError("Production forbids mock or disabled providers: BODY_SCAN_PROVIDER")
+        raise RuntimeError("Production requires a real provider: BODY_SCAN_PROVIDER")
 
 
 async def run_retention_loop(
@@ -164,9 +179,27 @@ async def lifespan(app: FastAPI):
         )
     else:
         app.state.mirror_vision_provider = DisabledLLMProvider()
-    provider_name = os.getenv("TRYON_PROVIDER", "mock")
-    if provider_name == "mock":
-        app.state.tryon_provider = MockTryOnProvider()
+    asr_model = os.getenv("MIRROR_ASR_MODEL", "")
+    if llm_api_key and llm_base_url and asr_model:
+        app.state.speech_recognizer = QwenASRRecognizer(
+            llm_base_url, llm_api_key, asr_model
+        )
+    else:
+        app.state.speech_recognizer = DisabledSpeechRecognizer()
+    taobao_app_key = os.getenv("TAOBAO_APP_KEY", "")
+    taobao_app_secret = os.getenv("TAOBAO_APP_SECRET", "")
+    if taobao_app_key and taobao_app_secret:
+        app.state.commerce_provider = TaobaoOpenApiProvider(
+            taobao_app_key,
+            taobao_app_secret,
+            session=os.getenv("TAOBAO_SESSION", ""),
+            api_method=os.getenv("TAOBAO_ITEM_API_METHOD", "taobao.tbk.item.info.get"),
+        )
+    else:
+        app.state.commerce_provider = DisabledCommerceProvider()
+    provider_name = os.getenv("TRYON_PROVIDER", "disabled")
+    if provider_name == "disabled":
+        app.state.tryon_provider = DisabledTryOnProvider()
     elif provider_name == "fashn-http":
         worker_url = os.getenv("FASHN_WORKER_URL")
         if not worker_url:
@@ -209,9 +242,20 @@ async def lifespan(app: FastAPI):
         app.state.body_scan_provider = BodygramPlatformProvider(organization_id, api_key)
     else:
         raise RuntimeError(f"Unsupported BODY_SCAN_PROVIDER: {body_provider_name}")
-    safety_provider_name = os.getenv("CONTENT_SAFETY_PROVIDER", "mock")
-    if safety_provider_name == "mock":
-        app.state.content_safety_provider = MockContentSafetyProvider()
+    safety_provider_name = os.getenv("CONTENT_SAFETY_PROVIDER", "disabled")
+    if safety_provider_name == "disabled":
+        app.state.content_safety_provider = DisabledContentSafetyProvider()
+    elif safety_provider_name == "bailian":
+        if not llm_api_key or not llm_base_url or not vision_model:
+            raise RuntimeError(
+                "MIRROR_LLM_API_KEY, MIRROR_LLM_BASE_URL and MIRROR_VISION_MODEL "
+                "are required for CONTENT_SAFETY_PROVIDER=bailian"
+            )
+        app.state.content_safety_provider = BailianContentSafetyProvider(
+            llm_base_url,
+            llm_api_key,
+            vision_model,
+        )
     elif safety_provider_name == "http":
         safety_url = os.getenv("CONTENT_SAFETY_URL")
         if not safety_url:

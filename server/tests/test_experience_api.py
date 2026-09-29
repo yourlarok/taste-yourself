@@ -20,7 +20,7 @@ def test_devtools_vertical_slice(tmp_path: Path, monkeypatch):
     with TestClient(app) as client:
         catalog = client.get("/api/v1/catalog/garments")
         assert catalog.status_code == 200
-        assert len(catalog.json()) == 3
+        assert len(catalog.json()) == 19
         catalog_image = client.get(catalog.json()[0]["image_url"])
         assert catalog_image.status_code == 200
         assert catalog_image.headers["content-type"] == "image/webp"
@@ -32,11 +32,9 @@ def test_devtools_vertical_slice(tmp_path: Path, monkeypatch):
         assert created.status_code == 201
         session_id = created.json()["id"]
 
-        static_result = client.post(
-            f"/api/v1/experience-sessions/{session_id}/static-tryon"
-        )
+        static_result = client.post(f"/api/v1/experience-sessions/{session_id}/static-tryon")
         assert static_result.status_code == 200
-        assert static_result.json()["preview_token"] == "mock:knit-sand"
+        assert static_result.json()["preview_token"] == "test:knit-sand"
 
         recent = client.get("/api/v1/me/recent-experience")
         assert recent.status_code == 200
@@ -58,11 +56,8 @@ def test_devtools_vertical_slice(tmp_path: Path, monkeypatch):
         assert scan.status_code == 503
         assert scan.json()["detail"] == "body_measurement_unavailable"
 
-        personal_analysis = client.get(
-            "/api/v1/catalog/garments/denim-blue/fit-analysis"
-        )
+        personal_analysis = client.get("/api/v1/catalog/garments/denim-blue/fit-analysis")
         assert personal_analysis.status_code == 409
-
 
         uploaded = client.post(
             "/api/v1/wardrobe/garments",
@@ -105,10 +100,7 @@ def test_devtools_vertical_slice(tmp_path: Path, monkeypatch):
 
         cleared = client.delete("/api/v1/me/fit-profile")
         assert cleared.json()["deleted"] == 0
-        assert (
-            client.get("/api/v1/catalog/garments/denim-blue/fit-analysis").status_code
-            == 409
-        )
+        assert client.get("/api/v1/catalog/garments/denim-blue/fit-analysis").status_code == 409
 
 
 def test_unknown_garment_and_session_return_404(tmp_path: Path, monkeypatch):
@@ -122,7 +114,4 @@ def test_unknown_garment_and_session_return_404(tmp_path: Path, monkeypatch):
             ).status_code
             == 404
         )
-        assert (
-            client.post("/api/v1/experience-sessions/missing/static-tryon").status_code
-            == 404
-        )
+        assert client.post("/api/v1/experience-sessions/missing/static-tryon").status_code == 404

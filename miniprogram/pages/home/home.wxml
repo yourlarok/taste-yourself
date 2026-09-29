@@ -55,6 +55,12 @@
   </view>
   <view class="composer">
     <input class="composer__input" value="{{inputValue}}" placeholder="问问魔镜……" placeholder-class="composer__placeholder" confirm-type="send" bindinput="onInput" bindconfirm="onSend" maxlength="1000" />
+    <view class="composer__voice {{recording ? 'is-recording' : ''}} {{transcribing ? 'is-busy' : ''}}" bindtap="onVoiceTap" hover-class="tap-dim">
+      <text>{{recording ? '■' : (transcribing ? '…' : '⌁')}}</text>
+    </view>
     <view class="composer__send {{sending || !inputValue ? 'is-disabled' : ''}}" bindtap="onSend" hover-class="tap-dim">↑</view>
+  </view>
+  <view wx:if="{{recording || transcribing}}" class="voice-state">
+    {{recording ? '正在听 · 再点一次结束' : '正在听懂你的话…'}}
   </view>
 </view>

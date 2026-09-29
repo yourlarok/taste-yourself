@@ -60,7 +60,7 @@ def test_fit_analysis_endpoint(tmp_path: Path, monkeypatch):
 
 def test_capabilities_report_runtime_provider_state(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "test.db"))
-    monkeypatch.setenv("TRYON_PROVIDER", "mock")
+    monkeypatch.setenv("TRYON_PROVIDER", "disabled")
     monkeypatch.setenv("BODY_SCAN_PROVIDER", "disabled")
     monkeypatch.setenv("REALTIME_PROVIDER", "disabled")
 
@@ -70,10 +70,15 @@ def test_capabilities_report_runtime_provider_state(tmp_path: Path, monkeypatch)
     assert response.status_code == 200
     body = response.json()
     states = {item["key"]: item["state"] for item in body["items"]}
-    assert body["mode"] == "demo"
+    assert body["mode"] == "mixed"
     assert states == {
+        "mirror_agent": "unavailable",
+        "mirror_voice": "unavailable",
+        "fun_face": "unavailable",
+        "taobao_import": "unavailable",
+        "wellbeing": "ready",
         "wardrobe": "ready",
-        "static_tryon": "demo",
+        "static_tryon": "unavailable",
         "size_analysis": "unavailable",
         "body_measurement": "unavailable",
         "realtime_tryon": "unavailable",

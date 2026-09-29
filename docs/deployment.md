@@ -15,11 +15,13 @@
 1. 复制 `.env.example` 为 `.env`，生成至少 32 字符的随机 `AUTH_TOKEN_SECRET`；首轮内测设置 `TRYON_PROVIDER=fashn-api` 和 `FASHN_API_KEY`。
 2. 填写正式微信 AppID/AppSecret。AppSecret 只存在服务器环境变量中。
 3. 准备已备案域名，将 `PUBLIC_DOMAIN` 指向服务器。
-4. 把 `miniprogram/env.js` 的 `useMock` 改为 `false`，并把 `baseUrl` 改成后端 HTTPS 域名（不含 `/api/v1`）。
+4. 把 `miniprogram/env.js` 的 `baseUrl` 改成后端 HTTPS 域名（不含 `/api/v1`）。客户端没有 Mock 开关。
 5. 在小程序后台登记 request、uploadFile、downloadFile 合法域名。
 6. 在服务器安全注入 FASHN API Key，不把密钥写入小程序或提交到 Git；采用自托管备用方案时再准备 NVIDIA 主机与权重目录。
-7. 配置真实 `BODY_SCAN_PROVIDER`、`CONTENT_SAFETY_PROVIDER` 和 `REALTIME_PROVIDER`；生产预检会拒绝模拟 Provider。
-8. 按 [隐私与提审配置](privacy-and-review.md) 完成公众平台声明。
+7. 配置百炼文本、视觉、ASR 模型；内容审核可直接复用百炼视觉模型与 AI 安全护栏。
+8. 配置淘宝开放平台 App Key/App Secret，商品链接只走官方 TOP API，不抓取网页。
+9. 配置真实 `BODY_SCAN_PROVIDER`、`CONTENT_SAFETY_PROVIDER` 和 `REALTIME_PROVIDER`；生产预检会拒绝未配置 Provider。
+10. 按 [隐私与提审配置](privacy-and-review.md) 完成公众平台声明。
 
 ## 启动
 

@@ -59,6 +59,9 @@ def test_production_rejects_missing_authentication(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("MIRROR_LLM_API_KEY", "test-llm-key")
     monkeypatch.setenv("MIRROR_LLM_MODEL", "test-model")
     monkeypatch.setenv("MIRROR_VISION_MODEL", "test-vision-model")
+    monkeypatch.setenv("MIRROR_ASR_MODEL", "qwen3-asr-flash")
+    monkeypatch.setenv("TAOBAO_APP_KEY", "test-taobao-key")
+    monkeypatch.setenv("TAOBAO_APP_SECRET", "test-taobao-secret")
 
     with TestClient(app) as client:
         response = client.post(

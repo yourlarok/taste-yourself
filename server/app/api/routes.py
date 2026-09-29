@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sqlite3
 from typing import Literal
 
 import httpx
@@ -48,8 +49,14 @@ from app.domain.models import (
     ProductFitData,
     UserFitProfile,
 )
-from app.domain.wardrobe import GarmentRecord, GarmentSizeChartInput, PersonImageRecord
+from app.domain.wardrobe import (
+    GarmentImportRequest,
+    GarmentRecord,
+    GarmentSizeChartInput,
+    PersonImageRecord,
+)
 from app.providers.body_scan import BodyScanProvider
+from app.providers.commerce import CommerceImportError, CommerceProvider
 from app.providers.content_safety import ContentSafetyProvider
 from app.providers.tryon import TryOnProvider
 from app.repositories.body_scans import BodyScanRepository
@@ -82,14 +89,6 @@ def _provider_capability(
             state="unavailable",
             provider=provider,
             notice="当前环境尚未配置这项能力。",
-        )
-    if provider.startswith("mock"):
-        return CapabilityItem(
-            key=key,
-            label=label,
-            state="demo",
-            provider=provider,
-            notice=demo_notice,
         )
     return CapabilityItem(
         key=key,
@@ -148,6 +147,10 @@ def get_quota_repository(request: Request) -> QuotaRepository:
     return request.app.state.quota_repository
 
 
+def get_commerce_provider(request: Request) -> CommerceProvider:
+    return request.app.state.commerce_provider
+
+
 def get_current_user(
     request: Request,
     authorization: str | None = Header(default=None),
@@ -185,7 +188,7 @@ def require_safe_image(
 ) -> None:
     try:
         allowed = provider.is_allowed(storage.root / relative_path, scene)
-    except (httpx.HTTPError, ValueError, OSError) as error:
+    except (httpx.HTTPError, RuntimeError, ValueError, OSError) as error:
         storage.delete(relative_path)
         raise HTTPException(status_code=503, detail="content_safety_unavailable") from error
     if not allowed:
@@ -239,6 +242,41 @@ def get_capabilities(request: Request) -> CapabilitySnapshot:
         ),
     )
     items = [
+        _provider_capability(
+            "mirror_agent",
+            "魔镜对话",
+            request.app.state.mirror_agent.provider.name,
+            "真实大模型已配置；回答与动作均经过服务端白名单校验。",
+            "",
+        ),
+        _provider_capability(
+            "mirror_voice",
+            "魔镜语音",
+            request.app.state.speech_recognizer.name,
+            "真实语音识别已配置；短录音只在内存中转写，不落库。",
+            "",
+        ),
+        _provider_capability(
+            "fun_face",
+            "趣味镜卡",
+            request.app.state.mirror_vision_provider.name,
+            "真实视觉模型已配置；仅分析非敏感可见特征，每日一次。",
+            "",
+        ),
+        _provider_capability(
+            "taobao_import",
+            "淘宝入衣橱",
+            request.app.state.commerce_provider.name,
+            "淘宝开放平台接口已配置；不抓取商品网页。",
+            "",
+        ),
+        CapabilityItem(
+            key="wellbeing",
+            label="状态整理",
+            state="ready",
+            provider="who-5-local",
+            notice="WHO-5 结构化自评已启用；结果不是医学诊断。",
+        ),
         CapabilityItem(
             key="wardrobe",
             label="我的衣橱",
@@ -252,7 +290,7 @@ def get_capabilities(request: Request) -> CapabilitySnapshot:
         realtime,
     ]
     states = {item.state for item in items}
-    mode = "demo" if "demo" in states else "live" if states == {"ready"} else "mixed"
+    mode = "live" if states <= {"ready", "configured"} else "mixed"
     return CapabilitySnapshot(
         environment=request.app.state.app_env,
         mode=mode,
@@ -315,7 +353,9 @@ def get_recent_experience(
     garment_name = (
         catalog_garment.name
         if catalog_garment
-        else uploaded_garment.name if uploaded_garment else "已删除的衣服"
+        else uploaded_garment.name
+        if uploaded_garment
+        else "已删除的衣服"
     )
     return RecentExperience(
         session_id=session.id,
@@ -348,10 +388,12 @@ def get_my_usage(
 def require_garment(
     garment_id: str,
     wardrobe: WardrobeRepository | None = None,
+    user_id: str | None = None,
 ) -> None:
-    if get_garment(garment_id) is None and (
-        wardrobe is None or wardrobe.get_garment(garment_id) is None
-    ):
+    if get_garment(garment_id) is not None:
+        return
+    uploaded = wardrobe.get_garment(garment_id) if wardrobe else None
+    if uploaded is None or user_id is None or uploaded.user_id != user_id:
         raise HTTPException(status_code=404, detail="garment_not_found")
 
 
@@ -379,7 +421,7 @@ def create_experience_session(
     wardrobe: WardrobeRepository = Depends(get_wardrobe_repository),
     current_user: str = Depends(get_current_user),
 ) -> ExperienceSession:
-    require_garment(payload.garment_id, wardrobe)
+    require_garment(payload.garment_id, wardrobe, current_user)
     return repository.create(current_user, payload.garment_id)
 
 
@@ -400,7 +442,7 @@ def select_session_garment(
     wardrobe: WardrobeRepository = Depends(get_wardrobe_repository),
     current_user: str = Depends(get_current_user),
 ) -> ExperienceSession:
-    require_garment(payload.garment_id, wardrobe)
+    require_garment(payload.garment_id, wardrobe, current_user)
     require_session_owner(repository.get(session_id), current_user)
     session = repository.select_garment(session_id, payload.garment_id)
     assert session is not None
@@ -434,6 +476,8 @@ def generate_static_tryon(
         person_path = storage.root / person.image_path
 
     uploaded_garment = wardrobe.get_garment(session.garment_id)
+    if uploaded_garment is not None and uploaded_garment.user_id != current_user:
+        raise HTTPException(status_code=404, detail="garment_not_found")
     garment_path = (
         storage.root / uploaded_garment.image_path
         if uploaded_garment
@@ -454,7 +498,7 @@ def generate_static_tryon(
             garment_path=garment_path,
             category=category,
         )
-    except (httpx.HTTPError, InvalidImage, OSError, ValueError) as error:
+    except (httpx.HTTPError, InvalidImage, OSError, RuntimeError, ValueError) as error:
         quotas.refund(current_user, "static")
         raise HTTPException(status_code=503, detail="static_tryon_unavailable") from error
     if result.status == "failed":
@@ -530,7 +574,7 @@ def analyze_garment_for_current_user(
     wardrobe: WardrobeRepository = Depends(get_wardrobe_repository),
     current_user: str = Depends(get_current_user),
 ) -> FitAnalysisResponse:
-    require_garment(garment_id, wardrobe)
+    require_garment(garment_id, wardrobe, current_user)
     profile = profiles.get(current_user)
     if profile is None:
         raise HTTPException(status_code=409, detail="fit_profile_required")
@@ -654,7 +698,7 @@ def create_body_scan(
 ) -> BodyScanResult:
     if not payload.consented:
         raise HTTPException(status_code=422, detail="explicit_consent_required")
-    if provider.name in {"disabled", "mock"}:
+    if provider.name == "disabled":
         raise HTTPException(status_code=503, detail="body_measurement_unavailable")
     require_session_owner(repository.get(payload.experience_session_id), current_user)
     return scans.create(current_user, payload.experience_session_id, provider.name)
@@ -722,9 +766,7 @@ def complete_body_scan(
     scans.set_status(scan_id, result.status)
     if result.status == "completed":
         previous = profiles.get(current_user)
-        previous_provider_scan_id = (
-            previous.get("provider_scan_id") if previous else None
-        )
+        previous_provider_scan_id = previous.get("provider_scan_id") if previous else None
         delete_scan = getattr(provider, "delete_scan", None)
         if previous_provider_scan_id and delete_scan:
             try:
@@ -793,6 +835,56 @@ async def upload_garment(
         raise HTTPException(status_code=422, detail=str(error)) from error
     require_safe_image(content_safety, storage, stored.relative_path, "garment_upload")
     record = repository.add_garment(current_user, name, category, stored)
+    return record.model_copy(update={"image_url": signer.sign(record.image_path)})
+
+
+@router.post(
+    "/wardrobe/imports/taobao",
+    response_model=GarmentRecord,
+    status_code=status.HTTP_201_CREATED,
+)
+def import_taobao_garment(
+    payload: GarmentImportRequest,
+    repository: WardrobeRepository = Depends(get_wardrobe_repository),
+    storage: LocalImageStorage = Depends(get_image_storage),
+    current_user: str = Depends(get_current_user),
+    signer: MediaUrlSigner = Depends(get_media_signer),
+    content_safety: ContentSafetyProvider = Depends(get_content_safety_provider),
+    commerce: CommerceProvider = Depends(get_commerce_provider),
+) -> GarmentRecord:
+    try:
+        product = commerce.resolve_product(payload.url)
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except (CommerceImportError, httpx.HTTPError) as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    existing = repository.get_external_garment(current_user, "taobao", product.item_id)
+    if existing:
+        return existing.model_copy(update={"image_url": signer.sign(existing.image_path)})
+    try:
+        raw, _ = commerce.download_image(product.image_url)
+        stored = storage.save_generated(raw, "garments")
+    except (CommerceImportError, InvalidImage, httpx.HTTPError, OSError) as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    require_safe_image(content_safety, storage, stored.relative_path, "garment_import")
+    try:
+        record = repository.add_garment(
+            current_user,
+            product.title,
+            payload.category or product.category,
+            stored,
+            source_type="taobao",
+            source_url=product.canonical_url,
+            external_item_id=product.item_id,
+            brand=product.brand,
+            tags=list(product.tags),
+        )
+    except sqlite3.IntegrityError:
+        storage.delete(stored.relative_path)
+        existing = repository.get_external_garment(current_user, "taobao", product.item_id)
+        if existing:
+            return existing.model_copy(update={"image_url": signer.sign(existing.image_path)})
+        raise
     return record.model_copy(update={"image_url": signer.sign(record.image_path)})
 
 

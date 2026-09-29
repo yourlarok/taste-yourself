@@ -139,8 +139,7 @@ class MirrorRepository:
                 (conversation_id, limit),
             ).fetchall()
         return [
-            {"role": str(row["role"]), "content": str(row["content"])}
-            for row in reversed(rows)
+            {"role": str(row["role"]), "content": str(row["content"])} for row in reversed(rows)
         ]
 
     def face_available_today(self, user_id: str) -> bool:

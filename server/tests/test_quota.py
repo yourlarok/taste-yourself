@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from app.api.routes import get_tryon_provider
 from app.main import app
 from app.repositories.quota import QuotaRepository
 
@@ -28,7 +29,7 @@ def test_api_enforces_daily_limits_and_reports_usage(tmp_path: Path, monkeypatch
     monkeypatch.setenv("MEDIA_ROOT", str(tmp_path / "media"))
     monkeypatch.setenv("STATIC_DAILY_LIMIT", "1")
     monkeypatch.setenv("REALTIME_DAILY_LIMIT", "1")
-    monkeypatch.setenv("TRYON_PROVIDER", "mock")
+    monkeypatch.setenv("TRYON_PROVIDER", "disabled")
     monkeypatch.setenv("REALTIME_PROVIDER", "decart-realtime")
     monkeypatch.setenv("DECART_API_KEY", "test-key")
 
@@ -90,16 +91,14 @@ def test_failed_static_provider_refunds_quota(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "quota-refund.db"))
     monkeypatch.setenv("MEDIA_ROOT", str(tmp_path / "media"))
     monkeypatch.setenv("STATIC_DAILY_LIMIT", "1")
-    monkeypatch.setenv("TRYON_PROVIDER", "mock")
+    monkeypatch.setenv("TRYON_PROVIDER", "disabled")
 
     with TestClient(app) as client:
         session = client.post(
             "/api/v1/experience-sessions", json={"garment_id": "knit-sand"}
         ).json()
-        app.state.tryon_provider = FailingTryOnProvider()
-        failed = client.post(
-            f"/api/v1/experience-sessions/{session['id']}/static-tryon", json={}
-        )
+        app.dependency_overrides[get_tryon_provider] = FailingTryOnProvider
+        failed = client.post(f"/api/v1/experience-sessions/{session['id']}/static-tryon", json={})
         usage = client.get("/api/v1/me/usage")
 
     assert failed.status_code == 503

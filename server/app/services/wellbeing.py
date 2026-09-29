@@ -130,4 +130,3 @@ def assess_wellbeing(payload: WellbeingAssessmentCreate) -> dict:
         ),
         "card": card,
     }
-

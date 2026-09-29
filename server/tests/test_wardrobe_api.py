@@ -64,3 +64,27 @@ def test_rejects_invalid_or_tiny_images(tmp_path: Path, monkeypatch):
         )
         assert tiny.status_code == 422
         assert tiny.json()["detail"] == "image_too_small"
+
+
+def test_wardrobe_garment_cannot_be_used_by_another_account(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "ownership.db"))
+    monkeypatch.setenv("MEDIA_ROOT", str(tmp_path / "media"))
+
+    with TestClient(app) as client:
+        owner = app.state.token_service.issue("owner").access_token
+        other = app.state.token_service.issue("other").access_token
+        uploaded = client.post(
+            "/api/v1/wardrobe/garments",
+            headers={"Authorization": f"Bearer {owner}"},
+            data={"name": "私有衬衫", "category": "tops"},
+            files={"image": ("shirt.png", image_bytes(), "image/png")},
+        )
+        response = client.post(
+            "/api/v1/experience-sessions",
+            headers={"Authorization": f"Bearer {other}"},
+            json={"garment_id": uploaded.json()["id"]},
+        )
+
+    assert uploaded.status_code == 201
+    assert response.status_code == 404
+    assert response.json()["detail"] == "garment_not_found"

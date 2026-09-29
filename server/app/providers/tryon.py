@@ -25,10 +25,11 @@ class TryOnProvider(Protocol):
         category: str = "tops",
     ) -> StaticTryOnResult: ...
 
-class MockTryOnProvider:
-    """Deterministic provider for WeChat DevTools and automated tests."""
 
-    name = "mock"
+class DisabledTryOnProvider:
+    """Fail-closed provider used when no real try-on service is configured."""
+
+    name = "disabled"
 
     def generate_static(
         self,
@@ -38,15 +39,8 @@ class MockTryOnProvider:
         garment_path: Path | None = None,
         category: str = "tops",
     ) -> StaticTryOnResult:
-        return StaticTryOnResult(
-            job_id=str(uuid4()),
-            experience_session_id=experience_session_id,
-            garment_id=garment_id,
-            status="completed",
-            provider=self.name,
-            preview_token=f"mock:{garment_id}",
-            notice="开发环境模拟结果；尚未调用真实生成模型。",
-        )
+        raise RuntimeError("static_tryon_not_configured")
+
 
 class FashnHttpTryOnProvider:
     """Calls the self-hosted FASHN GPU worker and stores the generated image locally."""
@@ -106,6 +100,7 @@ class FashnHttpTryOnProvider:
             result_url=f"/api/v1/media/{stored.relative_path}",
             notice="AI 生成试穿效果仅供视觉体验，不代表真实合身或面料物理效果。",
         )
+
 
 class FashnApiTryOnProvider:
     """Calls FASHN's hosted API and persists the result in our own media storage."""

@@ -46,7 +46,11 @@ Page({
     cameraTip: '',
     banner: { show: false, title: '', desc: '', actionText: '' },
     sessionId: '',
+    catalogAll: [],
     catalog: [],
+    audienceFilter: 'all',
+    bodyTypeFilter: 'all',
+    catalogFilterLabel: '全部灵感',
     wardrobe: [],
     selectedGarmentId: '',
     selectedGarmentName: '',
@@ -119,7 +123,7 @@ Page({
     if (mirrorGarmentIds.length) {
       wx.removeStorageSync('cat_mirror_selected_garments');
       this._pendingMirrorGarmentId = mirrorGarmentIds[0];
-      const available = this.data.catalog.concat(this.data.wardrobe);
+      const available = this.data.catalogAll.concat(this.data.wardrobe);
       const selected = available.find((item) => item.id === this._pendingMirrorGarmentId);
       if (selected) {
         this._pendingMirrorGarmentId = '';
@@ -161,6 +165,7 @@ Page({
           phase: 'camera',
           statusLine: statusLineOf('camera'),
           sessionId: session.id,
+          catalogAll: catalog,
           catalog,
           wardrobe,
           selectedGarmentId: first ? first.id : '',
@@ -270,9 +275,52 @@ Page({
 
   /* ================= 衣服 ================= */
 
+  onCatalogFilter() {
+    const audienceOptions = [
+      { value: 'all', label: '全部' },
+      { value: 'women', label: '女装' },
+      { value: 'men', label: '男装' },
+      { value: 'unisex', label: '中性' }
+    ];
+    wx.showActionSheet({
+      itemList: audienceOptions.map((item) => item.label),
+      success: (audienceChoice) => {
+        const audience = audienceOptions[audienceChoice.tapIndex];
+        const bodyOptions = [
+          { value: 'all', label: '全部体型' },
+          { value: 'triangle', label: '梨形' },
+          { value: 'rectangle', label: '直筒型' },
+          { value: 'hourglass', label: '沙漏型' },
+          { value: 'oval', label: '苹果型' },
+          { value: 'inverted-triangle', label: '倒三角' },
+          { value: 'petite', label: '小个子' },
+          { value: 'tall', label: '高个子' }
+        ];
+        wx.showActionSheet({
+          itemList: bodyOptions.map((item) => item.label),
+          success: (bodyChoice) => {
+            const body = bodyOptions[bodyChoice.tapIndex];
+            const catalog = this.data.catalogAll.filter((item) => {
+              const audienceMatches = audience.value === 'all' || item.audience === audience.value;
+              const bodyMatches = body.value === 'all' || (item.body_types || []).indexOf(body.value) >= 0;
+              return audienceMatches && bodyMatches;
+            });
+            this.setData({
+              catalog,
+              audienceFilter: audience.value,
+              bodyTypeFilter: body.value,
+              catalogFilterLabel: audience.label + ' · ' + body.label
+            });
+            if (!catalog.length) wx.showToast({ title: '这一组暂时没有衣服', icon: 'none' });
+          }
+        });
+      }
+    });
+  },
+
   onSelectGarment(e) {
     const id = e.detail.id;
-    const all = this.data.catalog.concat(this.data.wardrobe);
+    const all = this.data.catalogAll.concat(this.data.wardrobe);
     const g = all.find((x) => x.id === id);
     if (!g) return;
     this.patch({
@@ -288,22 +336,61 @@ Page({
   },
 
   onAddGarment() {
+    wx.showActionSheet({
+      itemList: ['粘贴淘宝链接', '从相册或相机添加'],
+      success: (choice) => {
+        if (choice.tapIndex === 0) this.openTaobaoImport();
+        if (choice.tapIndex === 1) this.openPhotoImport();
+      }
+    });
+  },
+
+  openPhotoImport() {
     wx.showModal({
       title: '衣服图要求',
       content: '平铺或挂拍、画面内仅一件衣物、背景简洁、光线均匀，效果更好。',
       confirmText: '选择图片',
-      cancelText: '取消',
       success: (res) => {
-        if (res.confirm) {
-          wx.showActionSheet({
-            itemList: ['上装 / 外套', '下装', '连衣裙 / 连体装'],
-            success: (choice) => {
-              const categories = ['tops', 'bottoms', 'one-pieces'];
-              this.chooseAndUpload(categories[choice.tapIndex]);
-            }
-          });
-        }
+        if (!res.confirm) return;
+        wx.showActionSheet({
+          itemList: ['上装 / 外套', '下装', '连衣裙 / 连体装'],
+          success: (choice) => {
+            const categories = ['tops', 'bottoms', 'one-pieces'];
+            this.chooseAndUpload(categories[choice.tapIndex]);
+          }
+        });
       }
+    });
+  },
+
+  openTaobaoImport() {
+    wx.showModal({
+      title: '从淘宝加入衣橱',
+      content: '粘贴淘宝或天猫商品链接。猫猫魔镜只读取该商品的标题与主图。',
+      editable: true,
+      placeholderText: 'https://item.taobao.com/…',
+      confirmText: '读取商品',
+      success: (res) => {
+        const url = (res.content || '').trim();
+        if (!res.confirm || !url) return;
+        this.importTaobaoGarment(url);
+      }
+    });
+  },
+
+  importTaobaoGarment(url) {
+    this.setData({ uploading: true, uploadPercent: 35, uploadError: '' });
+    api.importTaobaoGarment(url).then((result) => {
+      const item = result.garment;
+      const wardrobe = this.data.wardrobe.filter((garment) => garment.id !== item.id).concat([item]);
+      this.setData({ uploading: false, uploadPercent: 100 });
+      this.patch({ wardrobe });
+      this.onSelectGarment({ detail: { id: item.id } });
+      wx.showToast({ title: '已从淘宝加入', icon: 'success' });
+    }).catch((error) => {
+      this.setData({ uploading: false, uploadError: 'failed' });
+      const detail = api.explainError(error, 'upload');
+      wx.showModal({ title: detail.title, content: detail.desc, showCancel: false });
     });
   },
 
@@ -380,9 +467,7 @@ Page({
           phase: 'result',
           statusLine: statusLineOf('result'),
           resultImage: r.result_image,
-          resultKindText: r.provider === 'mock'
-            ? '演示画面 · 未调用真实生成模型'
-            : 'AI 生成效果，仅供视觉体验',
+          resultKindText: 'AI 生成效果，仅供视觉体验',
           resultTimeText: '刚刚',
           quotaUsed: false,
           quotaHint: ''
@@ -747,7 +832,7 @@ Page({
 
   launchRealtimeMirror() {
     this.setData({ showCamera: false });
-    const garments = this.data.catalog.concat(this.data.wardrobe).map((item) => ({
+    const garments = this.data.catalogAll.concat(this.data.wardrobe).map((item) => ({
       id: item.id,
       name: item.name,
       image_url: item.image_url

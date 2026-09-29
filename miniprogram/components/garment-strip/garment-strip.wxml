@@ -1,7 +1,13 @@
+<view class="gs__toolbar">
+  <text class="gs__title">灵感衣架</text>
+  <view class="gs__filter" bindtap="onFilter" hover-class="tap-dim">
+    <text>{{filterLabel}}</text><text class="gs__filter-arrow">⌄</text>
+  </view>
+</view>
 <scroll-view class="gs" scroll-x enhanced show-scrollbar="{{false}}">
   <view class="gs__row">
 
-    <text class="gs__section">示例</text>
+    <text class="gs__section">预设</text>
     <view
       wx:for="{{catalogView}}"
       wx:key="id"
@@ -60,7 +66,7 @@
     <view class="gs__item gs__item--static" bindtap="onAdd" hover-class="tap-dim">
       <view class="gs__thumb gs__thumb--add">
         <text class="i i-plus gs__add-icon"></text>
-        <text class="gs__add-text">添加衣服</text>
+        <text class="gs__add-text">图片或链接</text>
       </view>
       <text class="gs__name">　</text>
     </view>

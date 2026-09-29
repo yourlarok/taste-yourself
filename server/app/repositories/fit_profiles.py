@@ -33,13 +33,10 @@ class FitProfileRepository:
                 """
             )
             columns = {
-                str(row[1])
-                for row in connection.execute("PRAGMA table_info(user_fit_profiles)")
+                str(row[1]) for row in connection.execute("PRAGMA table_info(user_fit_profiles)")
             }
             if "provider_scan_id" not in columns:
-                connection.execute(
-                    "ALTER TABLE user_fit_profiles ADD COLUMN provider_scan_id TEXT"
-                )
+                connection.execute("ALTER TABLE user_fit_profiles ADD COLUMN provider_scan_id TEXT")
 
     def save(
         self,

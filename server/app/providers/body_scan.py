@@ -152,9 +152,7 @@ class BodygramPlatformProvider:
             if source.width < 480 or source.height <= source.width:
                 raise ValueError("body_scan_frame_must_be_full_length_portrait")
             image = source.convert("RGB")
-        background = tuple(
-            int(value) for value in ImageStat.Stat(image.resize((24, 24))).median
-        )
+        background = tuple(int(value) for value in ImageStat.Stat(image.resize((24, 24))).median)
         image.thumbnail((720, 1280), Image.Resampling.LANCZOS)
         canvas = Image.new("RGB", (720, 1280), background)
         canvas.paste(image, ((720 - image.width) // 2, (1280 - image.height) // 2))

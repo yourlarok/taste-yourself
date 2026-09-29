@@ -1,4 +1,4 @@
-// garment-strip — 横向衣服轨道：示例衣服 + 我的衣橱，真实缩略图与名称；
+// garment-strip — 横向衣服轨道：灵感衣架 + 我的衣橱，真实缩略图与名称；
 // 末尾“添加衣服”；上传中 / 上传失败 / 审核拒绝 / 图片失效均为独立状态。
 Component({
   properties: {
@@ -7,7 +7,8 @@ Component({
     selectedId: { type: String, value: '' },
     uploading: { type: Boolean, value: false },
     uploadPercent: { type: Number, value: 0 },
-    uploadError: { type: String, value: '' }        // '' | 'failed' | 'rejected'
+    uploadError: { type: String, value: '' },       // '' | 'failed' | 'rejected'
+    filterLabel: { type: String, value: '全部灵感' }
   },
 
   data: {
@@ -44,6 +45,10 @@ Component({
 
     onAdd() {
       if (!this.data.uploading) this.triggerEvent('add');
+    },
+
+    onFilter() {
+      this.triggerEvent('filter');
     },
 
     onRetry() {

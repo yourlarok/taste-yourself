@@ -39,6 +39,13 @@ def main() -> int:
         "WECHAT_APP_ID",
         "WECHAT_APP_SECRET",
         "PUBLIC_DOMAIN",
+        "MIRROR_LLM_BASE_URL",
+        "MIRROR_LLM_API_KEY",
+        "MIRROR_LLM_MODEL",
+        "MIRROR_VISION_MODEL",
+        "MIRROR_ASR_MODEL",
+        "TAOBAO_APP_KEY",
+        "TAOBAO_APP_SECRET",
     ]
     for name in required:
         if not os.getenv(name):
@@ -64,14 +71,21 @@ def main() -> int:
         failures.append("REALTIME_PROVIDER must be decart-realtime")
     if not os.getenv("DECART_API_KEY"):
         failures.append("Missing DECART_API_KEY")
-    if os.getenv("BODY_SCAN_PROVIDER") != "http":
-        failures.append("BODY_SCAN_PROVIDER 必须为 http")
-    if not os.getenv("BODY_SCAN_WORKER_URL"):
-        failures.append("缺少环境变量 BODY_SCAN_WORKER_URL")
-    if os.getenv("CONTENT_SAFETY_PROVIDER") != "http":
-        failures.append("CONTENT_SAFETY_PROVIDER 必须为 http")
-    if not os.getenv("CONTENT_SAFETY_URL"):
-        failures.append("缺少环境变量 CONTENT_SAFETY_URL")
+    body_provider = os.getenv("BODY_SCAN_PROVIDER")
+    if body_provider == "bodygram-platform":
+        if not os.getenv("BODYGRAM_ORG_ID") or not os.getenv("BODYGRAM_API_KEY"):
+            failures.append("Bodygram 需要 BODYGRAM_ORG_ID 与 BODYGRAM_API_KEY")
+    elif body_provider == "http":
+        if not os.getenv("BODY_SCAN_WORKER_URL"):
+            failures.append("缺少环境变量 BODY_SCAN_WORKER_URL")
+    else:
+        failures.append("BODY_SCAN_PROVIDER 必须为 bodygram-platform 或 http")
+    safety_provider = os.getenv("CONTENT_SAFETY_PROVIDER")
+    if safety_provider == "http":
+        if not os.getenv("CONTENT_SAFETY_URL"):
+            failures.append("缺少环境变量 CONTENT_SAFETY_URL")
+    elif safety_provider != "bailian":
+        failures.append("CONTENT_SAFETY_PROVIDER 必须为 bailian 或 http")
     positive_integers = (
         "STATIC_DAILY_LIMIT",
         "REALTIME_DAILY_LIMIT",

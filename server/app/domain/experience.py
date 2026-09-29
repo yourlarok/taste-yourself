@@ -14,6 +14,12 @@ class CatalogGarment(BaseModel):
     tone: str
     sizes: list[str]
     image_url: str
+    audience: Literal["women", "men", "unisex"] = "unisex"
+    body_types: list[str] = Field(default_factory=list)
+    occasions: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+    material: str = ""
+    silhouette: str = ""
 
 
 class ExperienceSessionCreate(BaseModel):

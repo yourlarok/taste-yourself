@@ -84,8 +84,10 @@
       uploading="{{uploading}}"
       upload-percent="{{uploadPercent}}"
       upload-error="{{uploadError}}"
+      filter-label="{{catalogFilterLabel}}"
       bindselect="onSelectGarment"
       bindadd="onAddGarment"
+      bindfilter="onCatalogFilter"
       bindretry-upload="onRetryUpload"
     />
     <tryon-controls

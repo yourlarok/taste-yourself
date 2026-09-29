@@ -1,6 +1,5 @@
-// 统一的数据入口：演示模式走 mock，真实模式适配本项目 FastAPI 契约。
+// 统一的数据入口：只适配真实 FastAPI 契约，不提供演示数据回退。
 const env = require('../env.js');
-const mock = require('./mock.js');
 
 const TOKEN_KEY = 'ty_token';
 let token = wx.getStorageSync(TOKEN_KEY) || '';
@@ -28,7 +27,6 @@ function normalizeLogin(response) {
 }
 
 function login() {
-  if (env.useMock) return mock.login().then(normalizeLogin);
   if (loginPromise) return loginPromise;
   loginPromise = realLogin().catch((error) => {
     loginPromise = null;
@@ -209,40 +207,38 @@ function explainError(error, scene) {
   return base;
 }
 
-const useMock = () => env.useMock;
-
 const api = {
   ApiError,
   explainError,
   login,
   getToken: () => token,
 
-  listCatalogGarments: () => useMock()
-    ? mock.listCatalogGarments()
-    : request('GET', '/api/v1/catalog/garments').then((r) => normalizeGarmentList(r, 'catalog')),
-  listWardrobeGarments: () => useMock()
-    ? mock.listWardrobeGarments()
-    : request('GET', '/api/v1/wardrobe/garments').then((r) => normalizeGarmentList(r, 'wardrobe')),
-  uploadWardrobeGarment: (filePath, category, onProgress) => useMock()
-    ? mock.uploadWardrobeGarment(filePath, category, onProgress)
-    : uploadFile('/api/v1/wardrobe/garments', filePath, 'image', {
-        name: '新加入的衣服', category: category || 'tops'
-      }, onProgress).then((item) => ({ garment: normalizeGarment(item, 'wardrobe') })),
+  listCatalogGarments: () => request('GET', '/api/v1/catalog/garments')
+    .then((r) => normalizeGarmentList(r, 'catalog')),
+  listWardrobeGarments: () => request('GET', '/api/v1/wardrobe/garments')
+    .then((r) => normalizeGarmentList(r, 'wardrobe')),
+  uploadWardrobeGarment: (filePath, category, onProgress) => uploadFile(
+    '/api/v1/wardrobe/garments',
+    filePath,
+    'image',
+    { name: '新加入的衣服', category: category || 'tops' },
+    onProgress
+  ).then((item) => ({ garment: normalizeGarment(item, 'wardrobe') })),
+  importTaobaoGarment: (url, category) => request(
+    'POST',
+    '/api/v1/wardrobe/imports/taobao',
+    { url, category: category || null }
+  ).then((item) => ({ garment: normalizeGarment(item, 'wardrobe') })),
 
-  getRecentExperience: () => useMock()
-    ? mock.getRecentExperience()
-    : request('GET', '/api/v1/me/recent-experience').then((r) => Object.assign({}, r, {
-        result_image: absoluteMediaUrl(r.result_image || r.result_url)
-      })),
-  getUsageInfo: () => useMock()
-    ? mock.getUsageInfo()
-    : request('GET', '/api/v1/me/usage').then((r) => ({
-        static_used: r.static.used, static_limit: r.static.limit,
-        realtime_used: r.realtime.used, realtime_limit: r.realtime.limit
-      })),
-  getCapabilities: () => useMock()
-    ? mock.getCapabilities()
-    : request('GET', '/api/v1/capabilities'),
+  getRecentExperience: () => request('GET', '/api/v1/me/recent-experience')
+    .then((r) => Object.assign({}, r, {
+      result_image: absoluteMediaUrl(r.result_image || r.result_url)
+    })),
+  getUsageInfo: () => request('GET', '/api/v1/me/usage').then((r) => ({
+    static_used: r.static.used, static_limit: r.static.limit,
+    realtime_used: r.realtime.used, realtime_limit: r.realtime.limit
+  })),
+  getCapabilities: () => request('GET', '/api/v1/capabilities'),
 
   createRealtimeClientToken: (sessionId) => request(
     'POST',
@@ -255,6 +251,9 @@ const api = {
     'POST',
     '/api/v1/mirror/conversations/' + conversationId + '/messages',
     { content }
+  ),
+  transcribeMirrorAudio: (filePath) => uploadFile(
+    '/api/v1/mirror/transcriptions', filePath, 'audio', {}
   ),
   getWellbeingQuestions: () => request('GET', '/api/v1/mirror/wellbeing/questions'),
   submitWellbeing: (payload) => request('POST', '/api/v1/mirror/wellbeing/assessments', payload),
@@ -273,43 +272,33 @@ const api = {
         measurements: r.measurements || r.measurements_cm
       })),
   deleteFitProfile: () => request('DELETE', '/api/v1/me/fit-profile'),
-  deleteAllData: () => useMock()
-    ? mock.deleteAllData()
-    : request('DELETE', '/api/v1/me/data', { confirmation: 'DELETE' }),
+  deleteAllData: () => request('DELETE', '/api/v1/me/data', { confirmation: 'DELETE' }),
 
-  createExperienceSession: (garmentId) => useMock()
-    ? mock.createExperienceSession(garmentId)
-    : request('POST', '/api/v1/experience-sessions', { garment_id: garmentId }),
-  switchSessionGarment: (sessionId, garmentId) => useMock()
-    ? mock.switchSessionGarment(sessionId, garmentId)
-    : request('PUT', '/api/v1/experience-sessions/' + sessionId + '/garment', { garment_id: garmentId }),
-  uploadPersonImage: (filePath) => useMock()
-    ? mock.uploadPersonImage(filePath)
-    : uploadFile('/api/v1/person-images', filePath, 'image'),
-  staticTryon: (sessionId, garmentId, personImageId) => useMock()
-    ? mock.staticTryon(sessionId, garmentId)
-    : request('POST', '/api/v1/experience-sessions/' + sessionId + '/static-tryon', {
-        person_image_id: personImageId || null
-      }).then((r) => {
-        if (r.status !== 'completed') {
-          throw new ApiError(503, r.notice || '试穿照生成失败', 'TRYON_FAILED');
-        }
-        return Object.assign({}, r, {
-          result_image: r.result_url
-            ? absoluteMediaUrl(r.result_url)
-            : r.provider === 'mock'
-              ? '/assets/demo/tryon-result.jpg'
-              : ''
-        });
-      }),
+  createExperienceSession: (garmentId) => request(
+    'POST', '/api/v1/experience-sessions', { garment_id: garmentId }
+  ),
+  switchSessionGarment: (sessionId, garmentId) => request(
+    'PUT', '/api/v1/experience-sessions/' + sessionId + '/garment', { garment_id: garmentId }
+  ),
+  uploadPersonImage: (filePath) => uploadFile('/api/v1/person-images', filePath, 'image'),
+  staticTryon: (sessionId, garmentId, personImageId) => request(
+    'POST',
+    '/api/v1/experience-sessions/' + sessionId + '/static-tryon',
+    { person_image_id: personImageId || null }
+  ).then((r) => {
+    if (r.status !== 'completed' || !r.result_url) {
+      throw new ApiError(503, r.notice || '试穿照生成失败', 'TRYON_FAILED');
+    }
+    return Object.assign({}, r, { result_image: absoluteMediaUrl(r.result_url) });
+  }),
 
   getFitAnalysis: (garmentId) => request('GET', '/api/v1/garments/' + garmentId + '/fit-analysis').then(normalizeFit),
-  getGarmentSizeChart: (garmentId) => useMock()
-    ? Promise.reject(new ApiError(404, '演示衣服不支持修改尺码表', 'DEMO_ONLY'))
-    : request('GET', '/api/v1/wardrobe/garments/' + garmentId + '/size-chart'),
-  saveGarmentSizeChart: (garmentId, chart) => useMock()
-    ? Promise.reject(new ApiError(409, '请切换真实后端后录入尺码表', 'DEMO_ONLY'))
-    : request('PUT', '/api/v1/wardrobe/garments/' + garmentId + '/size-chart', chart),
+  getGarmentSizeChart: (garmentId) => request(
+    'GET', '/api/v1/wardrobe/garments/' + garmentId + '/size-chart'
+  ),
+  saveGarmentSizeChart: (garmentId, chart) => request(
+    'PUT', '/api/v1/wardrobe/garments/' + garmentId + '/size-chart', chart
+  ),
 
   createBodyScan: (sessionId) => request('POST', '/api/v1/body-scans', { experience_session_id: sessionId, consented: true }),
   uploadScanFrame: (scanId, filePath, side) => uploadFile('/api/v1/body-scans/' + scanId + '/frames', filePath, 'image', { angle: side }),

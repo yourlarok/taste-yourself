@@ -2,6 +2,36 @@
   width: 100%;
 }
 
+.gs__toolbar {
+  height: 52rpx;
+  padding: 0 var(--s3) 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.gs__title {
+  font-size: 20rpx;
+  letter-spacing: 4rpx;
+}
+
+.gs__filter {
+  min-height: 44rpx;
+  padding: 0 18rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.24);
+  border-radius: var(--r-full);
+  background: rgba(24, 20, 16, 0.34);
+  display: flex;
+  align-items: center;
+  font-size: 20rpx;
+}
+
+.gs__filter-arrow {
+  margin-left: 10rpx;
+  color: rgba(255, 255, 255, 0.55);
+}
+
 .gs__row {
   display: flex;
   flex-direction: row;

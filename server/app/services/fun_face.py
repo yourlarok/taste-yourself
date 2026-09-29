@@ -52,18 +52,16 @@ def build_fun_face_result(user_id: str, answers: list[int], vision: dict) -> dic
         raise ValueError("fun_face_photo_quality_too_low")
 
     stable_seed = int(
-        hashlib.sha256(
-            f"{user_id}:{datetime.now(UTC).date().isoformat()}".encode()
-        ).hexdigest()[:8],
+        hashlib.sha256(f"{user_id}:{datetime.now(UTC).date().isoformat()}".encode()).hexdigest()[
+            :8
+        ],
         16,
     )
     stable = 47 + stable_seed % 7
     warmth = _bounded(answers[0] * 0.46 + visual["expression_energy"] * 0.34 + stable * 0.20)
     presence = _bounded(answers[1] * 0.46 + visual["eye_contact"] * 0.34 + stable * 0.20)
     sparkle = _bounded(answers[2] * 0.46 + visual["style_clarity"] * 0.34 + stable * 0.20)
-    ease = _bounded(
-        (100 - answers[1]) * 0.35 + visual["lighting_softness"] * 0.45 + stable * 0.20
-    )
+    ease = _bounded((100 - answers[1]) * 0.35 + visual["lighting_softness"] * 0.45 + stable * 0.20)
     dimensions = {"亲和感": warmth, "在场感": presence, "风格感": sparkle, "松弛感": ease}
     overall = round(sum(dimensions.values()) / len(dimensions))
     cat_index = min(4, max(0, round((overall - 35) / 12.5)))
@@ -83,9 +81,6 @@ def build_fun_face_result(user_id: str, answers: list[int], vision: dict) -> dic
         "dimensions": dimensions,
         "observations": observations,
         "explanation": "自述占 46%，可见画面特征占 34%，每日稳定校准占 20%。",
-        "notice": (
-            "趣味测试不从脸推断人格、命运、健康或身份；光线、表情和拍摄角度会影响结果。"
-        ),
+        "notice": ("趣味测试不从脸推断人格、命运、健康或身份；光线、表情和拍摄角度会影响结果。"),
         "card": card,
     }
-

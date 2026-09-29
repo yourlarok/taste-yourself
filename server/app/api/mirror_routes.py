@@ -29,6 +29,11 @@ from app.domain.mirror import (
 )
 from app.providers.content_safety import ContentSafetyProvider
 from app.providers.llm import LLMProvider
+from app.providers.speech import (
+    DisabledSpeechRecognizer,
+    QwenASRRecognizer,
+    SpeechRecognitionError,
+)
 from app.repositories.mirror import MirrorRepository
 from app.repositories.wardrobe import WardrobeRepository
 from app.services.fun_face import QUESTIONS as FUN_FACE_QUESTIONS
@@ -50,6 +55,33 @@ def get_mirror_agent(request: Request) -> MirrorAgent:
 
 def get_mirror_vision_provider(request: Request) -> LLMProvider:
     return request.app.state.mirror_vision_provider
+
+
+def get_speech_recognizer(
+    request: Request,
+) -> QwenASRRecognizer | DisabledSpeechRecognizer:
+    return request.app.state.speech_recognizer
+
+
+@router.post("/transcriptions")
+async def transcribe_mirror_audio(
+    audio: UploadFile = File(),
+    recognizer: QwenASRRecognizer | DisabledSpeechRecognizer = Depends(
+        get_speech_recognizer
+    ),
+    current_user: str = Depends(get_current_user),
+) -> dict[str, str]:
+    del current_user
+    raw = await audio.read(10 * 1024 * 1024 + 1)
+    try:
+        text = recognizer.transcribe(raw, audio.content_type or "")
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except SpeechRecognitionError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except httpx.HTTPError as error:
+        raise HTTPException(status_code=503, detail="mirror_asr_unavailable") from error
+    return {"text": text}
 
 
 @router.get("/bootstrap", response_model=MirrorBootstrap)
@@ -94,10 +126,33 @@ def send_message(
         raise HTTPException(status_code=404, detail="mirror_conversation_not_found")
     repository.add_message(conversation_id, current_user, "user", payload.content)
     garments = [
-        {"id": item.id, "name": item.name, "category": item.category} for item in GARMENTS
+        {
+            "id": item.id,
+            "name": item.name,
+            "category": item.category,
+            "source": "preset",
+            "audience": item.audience,
+            "body_types": ",".join(item.body_types),
+            "occasions": ",".join(item.occasions),
+            "tags": ",".join(item.tags),
+            "material": item.material,
+            "silhouette": item.silhouette,
+        }
+        for item in GARMENTS
     ]
     garments.extend(
-        {"id": item.id, "name": item.name, "category": item.category}
+        {
+            "id": item.id,
+            "name": item.name,
+            "category": item.category,
+            "source": "wardrobe",
+            "audience": item.audience,
+            "body_types": ",".join(item.body_types),
+            "occasions": ",".join(item.occasions),
+            "tags": ",".join(item.tags),
+            "material": "",
+            "silhouette": "",
+        }
         for item in wardrobe.list_garments(current_user)
     )
     try:

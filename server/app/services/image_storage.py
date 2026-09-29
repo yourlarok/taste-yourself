@@ -69,11 +69,20 @@ class LocalImageStorage:
         )
 
     def save_generated(self, raw: bytes, namespace: str = "results") -> StoredImage:
+        if len(raw) > MAX_UPLOAD_BYTES:
+            raise InvalidImage("image_too_large")
         try:
+            Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
+            with Image.open(io.BytesIO(raw)) as source:
+                source.verify()
             with Image.open(io.BytesIO(raw)) as source:
                 width, height = source.size
+                if min(width, height) < MIN_IMAGE_SIDE:
+                    raise InvalidImage("image_too_small")
+                if max(width, height) > MAX_IMAGE_SIDE or width * height > MAX_IMAGE_PIXELS:
+                    raise InvalidImage("image_dimensions_too_large")
                 normalized = source.convert("RGB")
-        except (UnidentifiedImageError, OSError) as error:
+        except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as error:
             raise InvalidImage("invalid_generated_image") from error
 
         folder = self.root / namespace

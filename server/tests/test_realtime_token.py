@@ -44,9 +44,7 @@ def test_realtime_token_is_short_lived_and_model_scoped(tmp_path: Path, monkeypa
         session = client.post(
             "/api/v1/experience-sessions", json={"garment_id": "knit-sand"}
         ).json()
-        response = client.post(
-            f"/api/v1/experience-sessions/{session['id']}/realtime/client-token"
-        )
+        response = client.post(f"/api/v1/experience-sessions/{session['id']}/realtime/client-token")
 
     assert response.status_code == 200
     assert response.json() == {"apiKey": "ek-short-lived-test-token", "expiresAt": "soon"}
@@ -68,9 +66,7 @@ def test_realtime_token_fails_closed_for_mock_provider(tmp_path: Path, monkeypat
         session = client.post(
             "/api/v1/experience-sessions", json={"garment_id": "knit-sand"}
         ).json()
-        response = client.post(
-            f"/api/v1/experience-sessions/{session['id']}/realtime/client-token"
-        )
+        response = client.post(f"/api/v1/experience-sessions/{session['id']}/realtime/client-token")
 
     assert response.status_code == 503
     assert response.json()["detail"] == "realtime_tryon_unavailable"

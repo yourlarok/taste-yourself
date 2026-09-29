@@ -61,6 +61,31 @@ class WardrobeRepository:
                   ON garment_size_charts (user_id, updated_at);
                 """
             )
+            existing = {
+                row["name"] for row in connection.execute("PRAGMA table_info(wardrobe_garments)")
+            }
+            migrations = {
+                "source_type": "TEXT NOT NULL DEFAULT 'upload'",
+                "source_url": "TEXT",
+                "external_item_id": "TEXT",
+                "brand": "TEXT",
+                "audience": "TEXT NOT NULL DEFAULT 'unknown'",
+                "body_types_json": "TEXT NOT NULL DEFAULT '[]'",
+                "occasions_json": "TEXT NOT NULL DEFAULT '[]'",
+                "tags_json": "TEXT NOT NULL DEFAULT '[]'",
+            }
+            for name, definition in migrations.items():
+                if name not in existing:
+                    connection.execute(
+                        f"ALTER TABLE wardrobe_garments ADD COLUMN {name} {definition}"
+                    )
+            connection.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_wardrobe_external
+                ON wardrobe_garments (user_id, source_type, external_item_id)
+                WHERE external_item_id IS NOT NULL
+                """
+            )
 
     def add_garment(
         self,
@@ -68,6 +93,15 @@ class WardrobeRepository:
         name: str,
         category: str,
         image: StoredImage,
+        *,
+        source_type: str = "upload",
+        source_url: str | None = None,
+        external_item_id: str | None = None,
+        brand: str | None = None,
+        audience: str = "unknown",
+        body_types: list[str] | None = None,
+        occasions: list[str] | None = None,
+        tags: list[str] | None = None,
     ) -> GarmentRecord:
         record = GarmentRecord(
             id=str(uuid4()),
@@ -78,14 +112,24 @@ class WardrobeRepository:
             status="ready",
             width=image.width,
             height=image.height,
+            source_type=source_type,
+            source_url=source_url,
+            external_item_id=external_item_id,
+            brand=brand,
+            audience=audience,
+            body_types=body_types or [],
+            occasions=occasions or [],
+            tags=tags or [],
             created_at=datetime.now(UTC),
         )
         with self._connect() as connection:
             connection.execute(
                 """
                 INSERT INTO wardrobe_garments (
-                  id, user_id, name, category, image_path, status, width, height, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  id, user_id, name, category, image_path, status, width, height,
+                  source_type, source_url, external_item_id, brand, audience,
+                  body_types_json, occasions_json, tags_json, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.id,
@@ -96,6 +140,14 @@ class WardrobeRepository:
                     record.status,
                     record.width,
                     record.height,
+                    record.source_type,
+                    record.source_url,
+                    record.external_item_id,
+                    record.brand,
+                    record.audience,
+                    json.dumps(record.body_types, ensure_ascii=False),
+                    json.dumps(record.occasions, ensure_ascii=False),
+                    json.dumps(record.tags, ensure_ascii=False),
                     record.created_at.isoformat(),
                 ),
             )
@@ -110,14 +162,35 @@ class WardrobeRepository:
                 """,
                 (user_id,),
             ).fetchall()
-        return [GarmentRecord.model_validate(dict(row)) for row in rows]
+        return [self._row_to_garment(row) for row in rows]
 
     def get_garment(self, garment_id: str) -> GarmentRecord | None:
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT * FROM wardrobe_garments WHERE id = ?", (garment_id,)
             ).fetchone()
-        return GarmentRecord.model_validate(dict(row)) if row else None
+        return self._row_to_garment(row) if row else None
+
+    def get_external_garment(
+        self, user_id: str, source_type: str, external_item_id: str
+    ) -> GarmentRecord | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM wardrobe_garments
+                WHERE user_id = ? AND source_type = ? AND external_item_id = ?
+                """,
+                (user_id, source_type, external_item_id),
+            ).fetchone()
+        return self._row_to_garment(row) if row else None
+
+    @staticmethod
+    def _row_to_garment(row: sqlite3.Row) -> GarmentRecord:
+        data = dict(row)
+        data["body_types"] = json.loads(data.pop("body_types_json", "[]"))
+        data["occasions"] = json.loads(data.pop("occasions_json", "[]"))
+        data["tags"] = json.loads(data.pop("tags_json", "[]"))
+        return GarmentRecord.model_validate(data)
 
     def add_person_image(self, user_id: str, image: StoredImage) -> PersonImageRecord:
         record = PersonImageRecord(

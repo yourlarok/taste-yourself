@@ -46,7 +46,12 @@ page { min-height: 100%; background: #0d0c14; color: #f8f2e7; }
 .quick-tool__icon { color: #d9be83; }
 .composer { position: fixed; z-index: 20; left: 24rpx; right: 24rpx; bottom: calc(112rpx + env(safe-area-inset-bottom)); min-height: 92rpx; display: flex; align-items: center; gap: 14rpx; padding: 10rpx 12rpx 10rpx 28rpx; border: 1rpx solid rgba(232,201,136,.24); border-radius: 999rpx; background: rgba(25,23,34,.94); box-shadow: 0 18rpx 58rpx rgba(0,0,0,.45); }
 .composer__input { flex: 1; height: 68rpx; color: #fff8eb; font-size: 27rpx; }.composer__placeholder { color: #777180; }
+.composer__voice { flex: none; width: 58rpx; height: 58rpx; display: flex; align-items: center; justify-content: center; border: 1rpx solid rgba(232,201,136,.28); border-radius: 50%; color: #e8c988; font-size: 30rpx; background: rgba(255,255,255,.04); }
+.composer__voice.is-recording { color: #271a20; background: #e7a09d; box-shadow: 0 0 0 8rpx rgba(231,160,157,.12); animation: voicePulse 1.25s ease-in-out infinite; }
+.composer__voice.is-busy { opacity: .58; }
+.voice-state { position: fixed; z-index: 21; left: 50%; bottom: calc(216rpx + env(safe-area-inset-bottom)); transform: translateX(-50%); padding: 12rpx 24rpx; border: 1rpx solid rgba(232,201,136,.22); border-radius: 999rpx; color: #e7d9bc; font-size: 21rpx; white-space: nowrap; background: rgba(18,16,25,.92); }
 .composer__send { width: 68rpx; height: 68rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #211927; font-size: 35rpx; background: linear-gradient(145deg, #f0d796, #c69f60); }
 .composer__send.is-disabled { opacity: .35; }.tap-dim { opacity: .7; transform: scale(.98); }
 @keyframes spellIn { from { opacity: 0; transform: translateY(16rpx) scale(.98); } to { opacity: 1; transform: none; } }
 @keyframes blink { 0%,70%,100% { opacity: .25; transform: translateY(0); } 35% { opacity: 1; transform: translateY(-5rpx); } }
+@keyframes voicePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(.92); } }
