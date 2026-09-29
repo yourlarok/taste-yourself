@@ -4,6 +4,8 @@ import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from app.db import connect_sqlite
+
 
 class RetentionService:
     def __init__(self, database_path: Path, media_root: Path) -> None:
@@ -18,8 +20,7 @@ class RetentionService:
             "person_images": (now - timedelta(days=person_days)).isoformat(),
             "tryon_results": (now - timedelta(days=result_days)).isoformat(),
         }
-        with sqlite3.connect(self.database_path) as connection:
-            connection.row_factory = sqlite3.Row
+        with connect_sqlite(self.database_path) as connection:
             connection.execute("BEGIN IMMEDIATE")
             for table, path_column in (
                 ("person_images", "image_path"),

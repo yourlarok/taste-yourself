@@ -42,6 +42,17 @@ services:
       CONTENT_SAFETY_TOKEN: ${CONTENT_SAFETY_TOKEN}
     volumes:
       - app-data:/data
+      - app-backups:/backups
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5)"
+      interval: 30s
+      timeout: 6s
+      retries: 3
+      start_period: 20s
     networks:
       - private
 
@@ -84,6 +95,7 @@ services:
 
 volumes:
   app-data:
+  app-backups:
   worker-output:
   caddy-data:
   caddy-config:

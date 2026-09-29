@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+from app.db import connect_sqlite
 from app.domain.experience import ExperienceSession
 
 
@@ -15,9 +16,7 @@ class ExperienceRepository:
         self._initialize()
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.database_path)
-        connection.row_factory = sqlite3.Row
-        return connection
+        return connect_sqlite(self.database_path)
 
     def _initialize(self) -> None:
         with self._connect() as connection:

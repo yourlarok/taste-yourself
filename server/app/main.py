@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
+import sqlite3
+import time
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
+from uuid import uuid4
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.mirror_routes import router as mirror_router
@@ -42,6 +47,8 @@ from app.services.media_signing import MediaUrlSigner
 from app.services.mirror_agent import MirrorAgent
 from app.services.privacy import PrivacyService
 from app.services.retention import RetentionService
+
+logger = logging.getLogger("cat_magic_mirror")
 
 
 def validate_production_environment(app_env: str) -> None:
@@ -127,6 +134,7 @@ async def lifespan(app: FastAPI):
     app.state.wardrobe_repository = WardrobeRepository(database_path)
     app.state.user_repository = UserRepository(database_path)
     app.state.app_env = app_env
+    app.state.database_path = database_path
     app.state.token_service = TokenService(auth_secret)
     app.state.media_signer = MediaUrlSigner(auth_secret)
     app.state.privacy_service = PrivacyService(database_path, media_root)
@@ -294,6 +302,62 @@ if live_mirror_directory.is_dir():
 app.state.live_mirror_ready = (live_mirror_directory / "index.html").is_file()
 
 
+@app.middleware("http")
+async def request_observability(request: Request, call_next):
+    request_id = str(uuid4())
+    started = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception(
+            "request_failed method=%s path=%s request_id=%s",
+            request.method,
+            request.url.path,
+            request_id,
+        )
+        raise
+    duration_ms = round((time.perf_counter() - started) * 1000, 1)
+    response.headers["X-Request-ID"] = request_id
+    logger.info(
+        "request_complete method=%s path=%s status=%s duration_ms=%s request_id=%s",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+        request_id,
+    )
+    return response
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/health/ready")
+def readiness(request: Request):
+    checks: dict[str, bool] = {}
+    try:
+        with sqlite3.connect(request.app.state.database_path, timeout=2) as connection:
+            connection.execute("SELECT 1").fetchone()
+        checks["database"] = True
+    except sqlite3.Error:
+        checks["database"] = False
+    checks.update(
+        {
+            "live_mirror": bool(request.app.state.live_mirror_ready),
+            "static_tryon": request.app.state.tryon_provider.name != "disabled",
+            "realtime_tryon": bool(request.app.state.decart_api_key),
+            "body_measurement": request.app.state.body_scan_provider.name != "disabled",
+            "content_safety": request.app.state.content_safety_provider.name != "disabled",
+            "mirror_agent": request.app.state.mirror_agent.provider.name != "disabled",
+            "mirror_vision": request.app.state.mirror_vision_provider.name != "disabled",
+            "mirror_asr": request.app.state.speech_recognizer.name != "disabled",
+            "commerce_import": request.app.state.commerce_provider.name != "disabled",
+        }
+    )
+    ready = all(checks.values())
+    payload = {"status": "ready" if ready else "not_ready", "checks": checks}
+    if not ready:
+        return JSONResponse(status_code=503, content=payload)
+    return payload

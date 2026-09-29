@@ -35,8 +35,11 @@ docker compose -f compose.production.yml up -d --build
 
 ```bash
 curl https://你的域名/health
+curl https://你的域名/health/ready
 docker compose -f compose.production.yml logs --tail=200 api fashn-worker caddy
 ```
+
+`/health` 只表示进程存活；`/health/ready` 会同时检查数据库、实时镜页和所有生产 Provider 是否已经配置，任一项未就绪时返回 HTTP 503。每个 API 响应都带 `X-Request-ID`，服务日志只记录请求方法、路径、状态、耗时和该 ID，不记录照片、语音、密钥或请求正文。
 
 ## 发布闸门
 
@@ -51,4 +54,11 @@ python -m pytest -q
 
 ## 备份与删除
 
-内测阶段至少每日备份 `/data/taste-yourself.db`。媒体卷包含用户衣服、人像与生成图，不得进入普通日志或公开备份。账号级删除接口已经覆盖数据库记录与关联媒体；成功测量后的原始扫描帧会立即清除。本人定格照默认保留 7 天，生成结果默认保留 30 天，服务启动时自动清理；调整期限时需同步更新隐私指引。
+内测阶段至少每日做一次 SQLite 在线一致性备份，不能在服务运行时直接复制数据库文件：
+
+```bash
+docker compose -f compose.production.yml exec -T api \
+  python /app/scripts/backup_sqlite.py /data/taste-yourself.db /backups
+```
+
+脚本使用 SQLite Backup API，并在写完后执行 `PRAGMA integrity_check`。Compose 把结果写入独立的 `app-backups` 卷；仍需由定时任务将它加密同步到受限的异地存储，并设置独立保留期。媒体卷包含用户衣服、人像与生成图，不得进入普通日志或公开备份。账号级删除接口已经覆盖数据库记录与关联媒体；成功测量后的原始扫描帧会立即清除。本人定格照默认保留 7 天，生成结果默认保留 30 天，服务启动时自动清理；调整期限时需同步更新隐私指引。

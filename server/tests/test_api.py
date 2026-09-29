@@ -8,7 +8,13 @@ from app.main import app
 def test_health_and_feedback(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "test.db"))
     with TestClient(app) as client:
-        assert client.get("/health").json() == {"status": "ok"}
+        health = client.get("/health")
+        assert health.json() == {"status": "ok"}
+        assert health.headers["x-request-id"]
+
+        readiness = client.get("/health/ready")
+        assert readiness.status_code == 503
+        assert readiness.json()["checks"]["database"] is True
 
         response = client.post(
             "/api/v1/fit-feedback",

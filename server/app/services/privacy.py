@@ -3,6 +3,8 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
+from app.db import connect_sqlite
+
 
 class PrivacyService:
     def __init__(self, database_path: Path, media_root: Path) -> None:
@@ -13,8 +15,7 @@ class PrivacyService:
         media_paths: set[str] = set()
         counts: dict[str, int] = {}
         scan_ids: list[str] = []
-        with sqlite3.connect(self.database_path) as connection:
-            connection.row_factory = sqlite3.Row
+        with connect_sqlite(self.database_path) as connection:
             connection.execute("BEGIN IMMEDIATE")
 
             for table, column in (

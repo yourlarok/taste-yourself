@@ -13,10 +13,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 COPY server/pyproject.toml ./
 COPY server/app ./app
+COPY scripts/backup_sqlite.py ./scripts/backup_sqlite.py
 COPY --from=live-mirror-build /src/dist ./static/live-mirror
 RUN python -m pip install --no-cache-dir .
 
-RUN useradd --create-home appuser && mkdir -p /data/media && chown -R appuser:appuser /data
+RUN useradd --create-home appuser \
+    && mkdir -p /data/media /backups \
+    && chown -R appuser:appuser /data /backups
 USER appuser
 
 EXPOSE 8000

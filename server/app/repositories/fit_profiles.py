@@ -5,6 +5,8 @@ import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
+from app.db import connect_sqlite
+
 
 class FitProfileRepository:
     def __init__(self, database_path: Path) -> None:
@@ -13,9 +15,7 @@ class FitProfileRepository:
         self._initialize()
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.database_path, timeout=10)
-        connection.row_factory = sqlite3.Row
-        return connection
+        return connect_sqlite(self.database_path)
 
     def _initialize(self) -> None:
         with self._connect() as connection:
